@@ -58,7 +58,7 @@ export const runSearchAgent = async (prompt: string, apiKey?: string) => {
   try {
     const ai = getAI(apiKey);
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-latest', 
+      model: 'gemini-2.5-flash',
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],

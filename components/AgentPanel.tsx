@@ -14,8 +14,8 @@ const PROVIDER_MODELS = {
   [AgentProvider.GOOGLE]: [
     { id: 'gemini-3-flash-preview', label: 'Gemini 3.0 Flash' },
     { id: 'gemini-3-pro-preview', label: 'Gemini 3.0 Pro' },
-    { id: 'gemini-2.5-flash-latest', label: 'Gemini 2.5 Flash' },
-    { id: 'gemini-2.5-flash-lite-latest', label: 'Gemini 2.5 Flash Lite' },
+    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+    { id: 'gemini-2.5-flash-lite-preview', label: 'Gemini 2.5 Flash Lite' },
   ],
   [AgentProvider.OPENAI]: [
     { id: 'o1', label: 'o1' },

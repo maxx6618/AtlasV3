@@ -19,8 +19,8 @@ const PROVIDER_MODELS = {
   [AgentProvider.GOOGLE]: [
     { id: 'gemini-3-flash-preview', label: 'Gemini 3.0 Flash (Fastest)' },
     { id: 'gemini-3-pro-preview', label: 'Gemini 3.0 Pro (High Intelligence)' },
-    { id: 'gemini-2.5-flash-latest', label: 'Gemini 2.5 Flash' },
-    { id: 'gemini-2.5-flash-lite-latest', label: 'Gemini 2.5 Flash Lite' },
+    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+    { id: 'gemini-2.5-flash-lite-preview', label: 'Gemini 2.5 Flash Lite' },
   ],
   [AgentProvider.OPENAI]: [
     { id: 'o1', label: 'o1 (Deep Reasoning)' },
@@ -109,7 +109,7 @@ const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onClose, selected
         
         // Use runJSONTask to ensure JSON output and use a reliable model
         const response = await runJSONTask(
-            'gemini-2.5-flash-latest', 
+            'gemini-2.5-flash',
             `User Request: "${prompt}"
             Context Fields: ${selectedInputs || "None"}
             Task: Refine prompt, suggest name, suggest container name, extract desired field keys.
