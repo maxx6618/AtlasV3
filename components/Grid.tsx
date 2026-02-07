@@ -178,18 +178,21 @@ const Grid: React.FC<GridProps> = ({
                 <option key={opt.id} value={opt.label} className="bg-[#111]">{opt.label}</option>
               ))}
             </select>
-            {value && (
-              <div 
-                className="absolute left-2 px-2 py-0.5 rounded text-[10px] font-bold pointer-events-none"
-                style={{ 
-                  backgroundColor: col.options?.find(o => o.label === value)?.color + '33' || '#333',
-                  color: col.options?.find(o => o.label === value)?.color || '#fff',
-                  border: `1px solid ${col.options?.find(o => o.label === value)?.color || '#444'}55`
-                }}
-              >
-                {value.toString()}
-              </div>
-            )}
+            {value && (() => {
+              const optColor = col.options?.find(o => o.label === value)?.color;
+              return (
+                <div
+                  className="absolute left-2 px-2 py-0.5 rounded text-[10px] font-bold pointer-events-none"
+                  style={{
+                    backgroundColor: optColor ? optColor + '33' : '#333',
+                    color: optColor || '#fff',
+                    border: `1px solid ${optColor ? optColor + '55' : '#44444455'}`
+                  }}
+                >
+                  {value.toString()}
+                </div>
+              );
+            })()}
             <ChevronDown className="w-3 h-3 ml-auto text-neutral-600 group-hover/select:text-neutral-400" />
           </div>
         );

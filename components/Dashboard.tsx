@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { TabData } from '../types';
+import { TabData, ColumnType } from '../types';
 import { TrendingUp, Users, Database, Globe } from 'lucide-react';
 
 interface DashboardProps {
@@ -11,28 +11,42 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ tabs }) => {
   const [selectedVerticalId, setSelectedVerticalId] = useState<string>('all');
 
-  const filteredTabs = selectedVerticalId === 'all' 
-    ? tabs 
+  const filteredTabs = selectedVerticalId === 'all'
+    ? tabs
     : tabs.filter(t => t.id === selectedVerticalId);
 
-  const totalCompanies = tabs.reduce((acc, tab) => acc + tab.rows.length, 0);
-  const totalEnriched = tabs.reduce((acc, tab) => 
-    acc + tab.rows.filter(r => r.enriched_data && r.enriched_data.toString().length > 0).length, 0
-  );
-  const totalSynced = tabs.reduce((acc, tab) => 
+  const countEnrichedRows = (tab: TabData) => {
+    const enrichmentColIds = tab.columns
+      .filter(c => c.type === ColumnType.ENRICHMENT)
+      .map(c => c.id);
+    if (enrichmentColIds.length === 0) return 0;
+    return tab.rows.filter(r =>
+      enrichmentColIds.some(colId => {
+        const val = r[colId];
+        if (!val) return false;
+        const str = val.toString().trim();
+        if (!str) return false;
+        try { return Object.keys(JSON.parse(str)).length > 0; } catch { return str.length > 0; }
+      })
+    ).length;
+  };
+
+  const totalCompanies = filteredTabs.reduce((acc, tab) => acc + tab.rows.length, 0);
+  const totalEnriched = filteredTabs.reduce((acc, tab) => acc + countEnrichedRows(tab), 0);
+  const totalSynced = filteredTabs.reduce((acc, tab) =>
     acc + tab.rows.filter(r => r.sync_status === 'Synced').length, 0
   );
 
-  const chartData = tabs.map(tab => ({
+  const chartData = filteredTabs.map(tab => ({
     name: tab.name,
     companies: tab.rows.length,
-    enriched: tab.rows.filter(r => r.enriched_data).length,
+    enriched: countEnrichedRows(tab),
     color: tab.color
   }));
 
   const pieData = [
     { name: 'Enriched', value: totalEnriched },
-    { name: 'Pending', value: totalCompanies - totalEnriched }
+    { name: 'Pending', value: Math.max(0, totalCompanies - totalEnriched) }
   ];
 
   const COLORS = ['#10B981', '#3F3F46'];
@@ -102,7 +116,7 @@ const Dashboard: React.FC<DashboardProps> = ({ tabs }) => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="mt-4 text-center">
-                <span className="text-2xl font-bold text-white">{Math.round((totalEnriched/totalCompanies)*100)}%</span>
+                <span className="text-2xl font-bold text-white">{totalCompanies > 0 ? Math.round((totalEnriched/totalCompanies)*100) : 0}%</span>
                 <p className="text-xs text-neutral-500 uppercase tracking-widest mt-1">Enriched</p>
               </div>
             </div>

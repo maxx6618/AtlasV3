@@ -17,11 +17,10 @@ export const runOpenAIAgent = async (modelId: string, prompt: string, apiKey: st
       body: JSON.stringify({
         model: modelId,
         messages: [
-          { role: "system", content: systemInstruction || "You are a helpful assistant. Return JSON." },
-          { role: "user", content: prompt }
+          ...(modelId.startsWith('o1') ? [] : [{ role: "system", content: systemInstruction || "You are a helpful assistant. Return JSON." }]),
+          { role: "user", content: modelId.startsWith('o1') ? `${systemInstruction || "You are a helpful assistant. Return JSON."}\n\n${prompt}` : prompt }
         ],
-        temperature: 0.7,
-        response_format: { type: "json_object" }
+        ...(modelId.startsWith('o1') ? {} : { temperature: 0.7, response_format: { type: "json_object" } })
       })
     });
 

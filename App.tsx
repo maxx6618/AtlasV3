@@ -285,7 +285,7 @@ const App: React.FC = () => {
     const newTab: TabData = {
       id: newId,
       name: 'New Vertical',
-      color: '#' + Math.floor(Math.random()*16777215).toString(16),
+      color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'),
       columns: [...activeTab.columns],
       rows: [],
       agents: []
@@ -313,11 +313,11 @@ const App: React.FC = () => {
       if (tab.id !== activeTabId) return tab;
       
       const newColumns: ColumnDefinition[] = [...tab.columns];
-      const newRows = [...tab.rows];
-      
+      let newRows = [...tab.rows];
+
       // Create output column if it doesn't exist
       let colId = newColumns.find(c => c.header === newAgent.outputColumnName)?.id;
-      
+
       if (!colId) {
           colId = `gen_${Date.now()}`;
           newColumns.push({
@@ -327,7 +327,8 @@ const App: React.FC = () => {
             width: 200,
             connectedAgentId: newAgent.id
           });
-          newRows.forEach(row => { row[colId!] = ''; });
+          const newColId = colId;
+          newRows = newRows.map(row => ({ ...row, [newColId]: '' }));
       } else {
          // If exists, just link agent
          const idx = newColumns.findIndex(c => c.id === colId);

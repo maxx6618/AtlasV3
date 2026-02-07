@@ -19,9 +19,9 @@ export const INITIAL_TABS: TabData[] = [
     color: '#3B82F6',
     columns: [...INITIAL_COLUMNS],
     rows: [
-      { id: '1', company_name: 'TechFlow Solutions', website: 'techflow.io', industry: 'Cloud Computing', location: 'Berlin', linkedin: 'li/techflow', enriched_data: 'Leading cloud provider', sync_status: 'Synced' },
+      { id: '1', company_name: 'TechFlow Solutions', website: 'techflow.io', industry: 'Cloud Computing', location: 'Berlin', linkedin: 'li/techflow', enriched_data: JSON.stringify({ summary: 'Leading cloud provider', sector: 'IaaS/PaaS' }), sync_status: 'Synced' },
       { id: '2', company_name: 'CyberGuard Systems', website: 'cyberguard.com', industry: 'Security', location: 'London', linkedin: 'li/cyberguard', enriched_data: '', sync_status: 'Pending' },
-      { id: '3', company_name: 'DataNexus', website: 'datanexus.ai', industry: 'AI & Data', location: 'Paris', linkedin: 'li/datanexus', enriched_data: 'Big data analytics', sync_status: 'Synced' },
+      { id: '3', company_name: 'DataNexus', website: 'datanexus.ai', industry: 'AI & Data', location: 'Paris', linkedin: 'li/datanexus', enriched_data: JSON.stringify({ summary: 'Big data analytics', sector: 'Data & AI' }), sync_status: 'Synced' },
     ],
     agents: [
       { 
@@ -44,7 +44,7 @@ export const INITIAL_TABS: TabData[] = [
     columns: [...INITIAL_COLUMNS],
     rows: [
       { id: '4', company_name: 'Precision Mech', website: 'premech.de', industry: 'Mechanical', location: 'Munich', linkedin: 'li/premech', enriched_data: '', sync_status: 'Pending' },
-      { id: '5', company_name: 'SolarGrid', website: 'solargrid.energy', industry: 'Energy', location: 'Oslo', linkedin: 'li/solargrid', enriched_data: 'Renewable energy infrastructure', sync_status: 'Synced' },
+      { id: '5', company_name: 'SolarGrid', website: 'solargrid.energy', industry: 'Energy', location: 'Oslo', linkedin: 'li/solargrid', enriched_data: JSON.stringify({ summary: 'Renewable energy infrastructure', sector: 'CleanTech' }), sync_status: 'Synced' },
     ],
     agents: []
   },
