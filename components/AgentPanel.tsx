@@ -96,9 +96,8 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, on
   const handleAdd = () => {
     if (!newAgent.name || !newAgent.prompt) return;
 
-    const targetHeader = columns.find(c => c.id === targetColId)?.header;
-    const outputs = targetHeader ? [targetHeader] : [];
-    
+    const targetHeader = columns.find(c => c.id === targetColId)?.header || 'Enriched Data';
+
     // Extract inputs from prompt looking for /field_id
     const inputs = Array.from(new Set(
       (newAgent.prompt?.match(/\/([a-zA-Z0-9_]+)/g) || [])
@@ -106,7 +105,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, on
         .filter(id => columns.some(c => c.id === id))
     ));
 
-    onAddAgent({ ...newAgent, inputs, outputs });
+    onAddAgent({ ...newAgent, inputs, outputs: [], outputColumnName: targetHeader });
     setShowForm(false);
     setNewAgent({ 
         name: '', 

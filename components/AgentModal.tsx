@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Bot, X, ToggleLeft, ToggleRight, Plus, CheckCircle2, Cpu, Globe, Sparkles, Wand2, Settings2, Box, Search, BrainCircuit, AlertTriangle } from 'lucide-react';
+import { Bot, X, ToggleLeft, ToggleRight, Plus, CheckCircle2, Cpu, Globe, Sparkles, Wand2, Settings2, Box, Search, BrainCircuit, AlertTriangle, Play, ArrowLeft, Zap } from 'lucide-react';
 import { AgentConfig, AgentType, AgentProvider, ColumnDefinition } from '../types';
 import { runAgentTask, runJSONTask } from '../services/geminiService';
 
@@ -36,21 +36,28 @@ const PROVIDER_MODELS = {
 };
 
 const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onClose, selectedRowsCount, initialTargetColId, apiKeys }: AgentModalProps) => {
+  const [view, setView] = useState<'list' | 'create'>(agents.length > 0 ? 'list' : 'create');
   const [name, setName] = useState('');
   const [type, setType] = useState<AgentType>(AgentType.WEB_SEARCH);
-  
+
   const [provider, setProvider] = useState<AgentProvider>(AgentProvider.GOOGLE);
   const [modelId, setModelId] = useState<string>(PROVIDER_MODELS[AgentProvider.GOOGLE][0].id);
 
   const [prompt, setPrompt] = useState('');
   const [inputs, setInputs] = useState<Set<string>>(new Set());
-  
+
   // Output Container Name (The column where JSON is stored)
-  const [outputColumnName, setOutputColumnName] = useState('');
+  const [outputColumnName, setOutputColumnName] = useState(() => {
+    if (initialTargetColId) {
+      const col = columns.find(c => c.id === initialTargetColId);
+      return col?.header || '';
+    }
+    return '';
+  });
   // Schema (The keys we expect in the JSON)
   const [outputs, setOutputs] = useState<string[]>([]);
   const [newOutputName, setNewOutputName] = useState('');
-  
+
   const [hasCondition, setHasCondition] = useState(false);
   const [conditionPrompt, setConditionPrompt] = useState('');
   const [condition, setCondition] = useState('');
@@ -186,21 +193,122 @@ const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onClose, selected
         {/* Header */}
         <div className="px-8 py-6 border-b border-neutral-800 flex items-center justify-between bg-[#090909] shrink-0">
           <div className="flex items-center gap-4">
+            {view === 'create' && agents.length > 0 && (
+              <button onClick={() => setView('list')} className="p-2.5 hover:bg-neutral-800 rounded-xl text-neutral-500 hover:text-white transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
             <div className="p-3 bg-neutral-900 rounded-2xl border border-neutral-800 shadow-inner">
               <Bot className="w-6 h-6 text-white" />
             </div>
             <div>
               <h2 className="text-sm font-black text-white uppercase tracking-widest italic">Atlas Intelligence</h2>
-              <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">New Agent Construct</p>
+              <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">
+                {view === 'list' ? 'Deployed Agents' : 'New Agent Construct'}
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2.5 hover:bg-neutral-800 rounded-xl text-neutral-500 hover:text-white transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {view === 'list' && (
+              <button
+                onClick={() => setView('create')}
+                className="flex items-center gap-2 bg-white hover:bg-neutral-200 text-black px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                New Agent
+              </button>
+            )}
+            <button onClick={onClose} className="p-2.5 hover:bg-neutral-800 rounded-xl text-neutral-500 hover:text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-1 overflow-hidden bg-[#090909]">
-          
+
+          {/* Agent List View */}
+          {view === 'list' && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+              <div className="max-w-3xl mx-auto space-y-4">
+                {agents.length === 0 ? (
+                  <div className="text-center py-20">
+                    <Bot className="w-12 h-12 text-neutral-700 mx-auto mb-4" />
+                    <p className="text-sm text-neutral-500 font-bold">No agents deployed yet.</p>
+                    <button onClick={() => setView('create')} className="mt-4 text-xs text-blue-400 hover:text-blue-300 font-bold uppercase tracking-wider">
+                      Create your first agent
+                    </button>
+                  </div>
+                ) : (
+                  agents.map(agent => {
+                    const inputCols = columns.filter(c => agent.inputs.includes(c.id));
+                    const targetCol = columns.find(c => c.header === agent.outputColumnName);
+                    return (
+                      <div key={agent.id} className="bg-[#0c0c0c] border border-neutral-800 rounded-2xl p-6 hover:border-neutral-700 transition-all group">
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-sm font-black text-white uppercase tracking-tight">{agent.name}</span>
+                              <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${
+                                agent.type === AgentType.WEB_SEARCH ? 'bg-blue-900/30 text-blue-400 border border-blue-500/20' :
+                                agent.type === AgentType.REASONING ? 'bg-purple-900/30 text-purple-400 border border-purple-500/20' :
+                                'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                              }`}>
+                                {agent.type === AgentType.WEB_SEARCH ? 'Web Search' : agent.type === AgentType.REASONING ? 'Reasoning' : 'Text'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-neutral-500 line-clamp-2 mb-3">{agent.prompt}</p>
+                            <div className="flex items-center gap-4 text-[10px] text-neutral-600">
+                              <span className="flex items-center gap-1">
+                                <Globe className="w-3 h-3" />
+                                {agent.provider === AgentProvider.GOOGLE ? 'Gemini' : agent.provider === AgentProvider.OPENAI ? 'OpenAI' : 'Claude'}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Cpu className="w-3 h-3" />
+                                {agent.modelId}
+                              </span>
+                              {targetCol && (
+                                <span className="flex items-center gap-1">
+                                  <Zap className="w-3 h-3" />
+                                  → {targetCol.header}
+                                </span>
+                              )}
+                            </div>
+                            {inputCols.length > 0 && (
+                              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                                <span className="text-[9px] text-neutral-600 font-bold uppercase">Inputs:</span>
+                                {inputCols.map(c => (
+                                  <span key={c.id} className="text-[9px] bg-neutral-900 border border-neutral-800 text-neutral-400 px-2 py-0.5 rounded-md font-bold">{c.header}</span>
+                                ))}
+                              </div>
+                            )}
+                            {agent.outputs.length > 0 && (
+                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                <span className="text-[9px] text-neutral-600 font-bold uppercase">Schema:</span>
+                                {agent.outputs.map((key, i) => (
+                                  <span key={i} className="text-[9px] bg-neutral-900 border border-neutral-800 text-neutral-400 px-2 py-0.5 rounded-md font-mono">{key}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => onRunAgent(agent.id)}
+                            className="ml-4 shrink-0 flex items-center gap-2 bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white px-5 py-3 rounded-xl transition-all text-[10px] font-black uppercase tracking-wider border border-blue-500/20 hover:border-blue-600"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                            Run{selectedRowsCount > 0 ? ` (${selectedRowsCount})` : ''}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Create View */}
+          {view === 'create' && <>
+
           {/* Left Sidebar: Inputs */}
           <div className="w-72 border-r border-neutral-800 bg-[#0c0c0c] flex flex-col shrink-0">
             <div className="p-6 border-b border-neutral-800/50">
@@ -439,13 +547,13 @@ const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onClose, selected
 
             {/* Footer Action */}
             <div className="p-6 border-t border-neutral-800 bg-[#0c0c0c] flex justify-end gap-4">
-                 <button 
+                 <button
                     onClick={onClose}
                     className="px-8 py-4 rounded-xl text-[11px] font-black uppercase tracking-widest text-neutral-500 hover:text-white transition-colors"
                  >
                     Cancel
                  </button>
-                 <button 
+                 <button
                     onClick={handleDeploy}
                     className="bg-white hover:bg-neutral-200 text-black px-10 py-4 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-all active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.15)] flex items-center gap-3"
                 >
@@ -454,6 +562,8 @@ const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onClose, selected
                 </button>
             </div>
           </div>
+
+          </>}
         </div>
       </div>
     </div>
