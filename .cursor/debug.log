@@ -1,0 +1,35 @@
+{"location":"demoVoiceService.ts:clearAudioCache","message":"Cache cleared ElevenLabs reset","data":{},"timestamp":1770758639071,"hypothesisId":"H2"}
+{"location":"demoVoiceService.ts:clearAudioCache","message":"Cache cleared ElevenLabs reset","data":{},"timestamp":1770758639073,"hypothesisId":"H2"}
+{"location":"demoVoiceService.ts:prefetchAudio.then","message":"Prefetch response not ok","data":{"status":402,"role":"user"},"timestamp":1770758653593,"hypothesisId":"H1"}
+{"location":"demoVoiceService.ts:speakText","message":"Using WebSpeech","data":{"role":"user","hasKey":true,"bypass":true,"reason":"bypass"},"timestamp":1770758653596,"hypothesisId":"H4"}
+{"location":"demoVoiceService.ts:markElevenLabsFailure","message":"ElevenLabs failure marked","data":{"status":402,"willSetAuthInvalid":false,"backoffMs":10000},"timestamp":1770758653595,"hypothesisId":"H1"}
+{"location":"demoVoiceService.ts:prefetchAudio","message":"Prefetch skip returning null","data":{"role":"bot","hasKey":true,"bypass":true},"timestamp":1770758656474,"hypothesisId":"H2"}
+{"location":"demoVoiceService.ts:speakText","message":"Using WebSpeech","data":{"role":"bot","hasKey":true,"bypass":true,"reason":"bypass"},"timestamp":1770758656916,"hypothesisId":"H4"}
+{"location":"demoVoiceService.ts:prefetchAudio","message":"Prefetch skip returning null","data":{"role":"user","hasKey":true,"bypass":true},"timestamp":1770758662456,"hypothesisId":"H2"}
+{"location":"demoVoiceService.ts:speakText","message":"Using WebSpeech","data":{"role":"user","hasKey":true,"bypass":true,"reason":"bypass"},"timestamp":1770758662457,"hypothesisId":"H4"}
+{"location":"demoVoiceService.ts:markElevenLabsFailure","message":"ElevenLabs failure marked","data":{"status":402,"willSetAuthInvalid":false,"backoffMs":10000},"timestamp":1770758697395,"hypothesisId":"H1"}
+{"location":"demoVoiceService.ts:speakText","message":"Using WebSpeech","data":{"role":"user","hasKey":true,"bypass":true,"reason":"bypass"},"timestamp":1770758697397,"hypothesisId":"H4"}
+{"location":"demoVoiceService.ts:prefetchAudio.then","message":"Prefetch response not ok","data":{"status":402,"role":"user"},"timestamp":1770758697394,"hypothesisId":"H1"}
+{"location":"demoVoiceService.ts:clearAudioCache","message":"Cache cleared ElevenLabs reset","data":{},"timestamp":1770758747925,"hypothesisId":"H2"}
+{"location":"demoVoiceService.ts:clearAudioCache","message":"Cache cleared ElevenLabs reset","data":{},"timestamp":1770758747928,"hypothesisId":"H2"}
+{"location":"demoVoiceService.ts:prefetchAudio.then","message":"Prefetch response not ok","data":{"status":402,"role":"user"},"timestamp":1770758761886,"hypothesisId":"H1"}
+{"location":"demoVoiceService.ts:markElevenLabsFailure","message":"ElevenLabs failure marked","data":{"status":402,"willSetAuthInvalid":false,"backoffMs":10000},"timestamp":1770758761896,"hypothesisId":"H1","runId":"post-fix"}
+{"location":"demoVoiceService.ts:speakText","message":"Using ElevenLabs","data":{"role":"user","hasKey":true,"bypass":false,"reason":"elevenLabs"},"timestamp":1770758761917,"hypothesisId":"H4"}
+{"location":"demoVoiceService.ts:markElevenLabsFailure","message":"ElevenLabs failure marked","data":{"status":402,"willSetAuthInvalid":false,"backoffMs":10000},"timestamp":1770758761965,"hypothesisId":"H1","runId":"post-fix"}
+{"location":"demoVoiceService.ts:prefetchAudio.then","message":"Prefetch response not ok","data":{"status":402,"role":"user"},"timestamp":1770758768543,"hypothesisId":"H1"}
+{"location":"demoVoiceService.ts:markElevenLabsFailure","message":"ElevenLabs failure marked","data":{"status":402,"willSetAuthInvalid":false,"backoffMs":10000},"timestamp":1770758768545,"hypothesisId":"H1","runId":"post-fix"}
+{"location":"demoVoiceService.ts:speakText","message":"Using ElevenLabs","data":{"role":"user","hasKey":true,"bypass":false,"reason":"elevenLabs"},"timestamp":1770758768546,"hypothesisId":"H4"}
+{"location":"demoVoiceService.ts:markElevenLabsFailure","message":"ElevenLabs failure marked","data":{"status":402,"willSetAuthInvalid":false,"backoffMs":10000},"timestamp":1770758768600,"hypothesisId":"H1","runId":"post-fix"}
+{"location":"demoVoiceService.ts:prefetchAudio.then","message":"Prefetch response not ok","data":{"status":402,"role":"user"},"timestamp":1770758801249,"hypothesisId":"H1"}
+{"location":"demoVoiceService.ts:markElevenLabsFailure","message":"ElevenLabs failure marked","data":{"status":402,"willSetAuthInvalid":false,"backoffMs":10000},"timestamp":1770758801263,"hypothesisId":"H1","runId":"post-fix"}
+{"location":"demoVoiceService.ts:speakText","message":"Using ElevenLabs","data":{"role":"user","hasKey":true,"bypass":false,"reason":"elevenLabs"},"timestamp":1770758801273,"hypothesisId":"H4"}
+{"location":"demoVoiceService.ts:markElevenLabsFailure","message":"ElevenLabs failure marked","data":{"status":402,"willSetAuthInvalid":false,"backoffMs":10000},"timestamp":1770758801321,"hypothesisId":"H1","runId":"post-fix"}
+{"location":"demoVoiceService.ts:markElevenLabsFailure","message":"ElevenLabs failure marked","data":{"status":402,"willSetAuthInvalid":false,"backoffMs":10000},"timestamp":1770758822463,"hypothesisId":"H1","runId":"post-fix"}
+{"location":"demoVoiceService.ts:prefetchAudio.then","message":"Prefetch response not ok","data":{"status":402,"role":"user"},"timestamp":1770758822463,"hypothesisId":"H1"}
+{"location":"demoVoiceService.ts:speakText","message":"Using ElevenLabs","data":{"role":"user","hasKey":true,"bypass":false,"reason":"elevenLabs"},"timestamp":1770758822464,"hypothesisId":"H4"}
+{"location":"demoVoiceService.ts:markElevenLabsFailure","message":"ElevenLabs failure marked","data":{"status":402,"willSetAuthInvalid":false,"backoffMs":10000},"timestamp":1770758822508,"hypothesisId":"H1","runId":"post-fix"}
+{"location":"demoVoiceService.ts:clearAudioCache","message":"Cache cleared ElevenLabs reset","data":{},"timestamp":1770758838469,"hypothesisId":"H2"}
+{"location":"demoVoiceService.ts:clearAudioCache","message":"Cache cleared ElevenLabs reset","data":{},"timestamp":1770758838471,"hypothesisId":"H2"}
+{"location":"demoVoiceService.ts:clearAudioCache","message":"Cache cleared ElevenLabs reset","data":{},"timestamp":1770759033990,"hypothesisId":"H2"}
+{"location":"demoVoiceService.ts:clearAudioCache","message":"Cache cleared ElevenLabs reset","data":{},"timestamp":1770759033992,"hypothesisId":"H2"}
+{"location":"demoVoiceService.ts:clearAudioCache","message":"Cache cleared ElevenLabs reset","data":{},"timestamp":1770759364519,"hypothesisId":"H2"}

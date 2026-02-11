@@ -8,36 +8,47 @@ interface AgentPanelProps {
   columns: ColumnDefinition[];
   onRunAgent: (agentId: string) => void;
   onAddAgent: (agent: Partial<AgentConfig>) => void;
+  isDarkMode: boolean;
 }
 
 const PROVIDER_MODELS = {
   [AgentProvider.GOOGLE]: [
     { id: 'gemini-3-flash-preview', label: 'Gemini 3.0 Flash' },
     { id: 'gemini-3-pro-preview', label: 'Gemini 3.0 Pro' },
-    { id: 'gemini-2.5-flash-latest', label: 'Gemini 2.5 Flash' },
-    { id: 'gemini-2.5-flash-lite-latest', label: 'Gemini 2.5 Flash Lite' },
+    { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+    { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+    { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
   ],
   [AgentProvider.OPENAI]: [
-    { id: 'o1', label: 'o1' },
-    { id: 'o1-mini', label: 'o1 Mini' },
+    { id: 'o3', label: 'o3' },
+    { id: 'o4-mini', label: 'o4-mini' },
     { id: 'gpt-4o', label: 'GPT-4o' },
     { id: 'gpt-4o-mini', label: 'GPT-4o Mini' },
   ],
   [AgentProvider.ANTHROPIC]: [
-    { id: 'claude-3-5-sonnet-latest', label: 'Claude 3.5 Sonnet' },
-    { id: 'claude-3-5-haiku-latest', label: 'Claude 3.5 Haiku' },
-    { id: 'claude-3-opus-latest', label: 'Claude 3 Opus' },
+    { id: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
+    { id: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
+    { id: 'claude-haiku-4-5', label: 'Claude Haiku 4.5' },
   ]
 };
 
-const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, onAddAgent }) => {
+const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, onAddAgent, isDarkMode }) => {
+  const bgMain = isDarkMode ? 'bg-[#131d2e]' : 'bg-white';
+  const bgSecondary = isDarkMode ? 'bg-[#192436]' : 'bg-neutral-50';
+  const bgTertiary = isDarkMode ? 'bg-[#0f172a]' : 'bg-neutral-100';
+  const borderMain = isDarkMode ? 'border-[#1e2d3d]' : 'border-neutral-200';
+  const borderSecondary = isDarkMode ? 'border-[#263a4f]' : 'border-neutral-300';
+  const textPrimary = isDarkMode ? 'text-white' : 'text-gray-900';
+  const textSecondary = isDarkMode ? 'text-neutral-500' : 'text-neutral-600';
+  const textTertiary = isDarkMode ? 'text-neutral-400' : 'text-neutral-500';
+  const hoverBg = isDarkMode ? 'hover:bg-[#1e2d3d]' : 'hover:bg-neutral-100';
   const [showForm, setShowForm] = useState(false);
   const [slashMenu, setSlashMenu] = useState<{ open: boolean; target: 'prompt' | 'condition'; x: number; y: number; filter: string } | null>(null);
   
   const [targetColId, setTargetColId] = useState<string>(columns[0]?.id || '');
   const [newAgent, setNewAgent] = useState<Partial<AgentConfig>>({
     name: '',
-    type: AgentType.WEB_SEARCH,
+    type: AgentType.GOOGLE_SEARCH,
     provider: AgentProvider.GOOGLE,
     modelId: 'gemini-3-flash-preview',
     prompt: '',
@@ -110,7 +121,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, on
     setShowForm(false);
     setNewAgent({ 
         name: '', 
-        type: AgentType.WEB_SEARCH, 
+        type: AgentType.GOOGLE_SEARCH, 
         provider: AgentProvider.GOOGLE,
         modelId: 'gemini-3-flash-preview',
         prompt: '', 
@@ -125,13 +136,13 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, on
   );
 
   return (
-    <div className="w-80 h-full bg-[#111] border-l border-neutral-800 flex flex-col relative">
+    <div className={`w-80 h-full ${bgMain} border-l ${borderMain} flex flex-col relative`}>
       {slashMenu && (
         <div 
-          className="absolute z-[100] w-56 bg-[#1a1a1a] border border-neutral-700 rounded-lg shadow-2xl py-1 overflow-hidden"
+          className={`absolute z-[100] w-56 ${isDarkMode ? 'bg-[#1a2638]' : 'bg-white'} border ${borderSecondary} rounded-lg shadow-2xl py-1 overflow-hidden`}
           style={{ top: '30%', right: '10%' }}
         >
-          <div className="px-3 py-1.5 text-[10px] font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-800">
+          <div className={`px-3 py-1.5 text-[10px] font-bold ${textSecondary} uppercase tracking-widest border-b ${borderMain}`}>
             Select Field
           </div>
           <div className="max-h-48 overflow-y-auto">
@@ -139,7 +150,7 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, on
               <button
                 key={col.id}
                 onMouseDown={(e) => { e.preventDefault(); insertField(col.id); }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-300 hover:bg-blue-600 hover:text-white transition-colors"
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm ${isDarkMode ? 'text-neutral-300' : 'text-gray-700'} hover:bg-blue-600 hover:text-white transition-colors`}
               >
                 <Hash className="w-3 h-3 opacity-50" />
                 {col.header}
@@ -149,14 +160,14 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, on
         </div>
       )}
 
-      <div className="p-4 border-b border-neutral-800 flex items-center justify-between">
+      <div className={`p-4 border-b ${borderMain} flex items-center justify-between`}>
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5 text-blue-400" />
-          <h2 className="text-sm font-semibold text-white">Tab Agents</h2>
+          <h2 className={`text-sm font-semibold ${textPrimary}`}>Tab Agents</h2>
         </div>
         <button 
           onClick={() => setShowForm(!showForm)}
-          className={`p-1 rounded transition-colors ${showForm ? 'bg-blue-600 text-white' : 'hover:bg-neutral-800 text-neutral-400'}`}
+          className={`p-1 rounded transition-colors ${showForm ? 'bg-blue-600 text-white' : `${hoverBg} ${textTertiary}`}`}
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -164,68 +175,63 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, on
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {showForm && (
-          <div className="bg-[#181818] border border-neutral-700 rounded-lg p-4 space-y-3 shadow-xl">
-            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">New Agent</h3>
+          <div className={`${bgSecondary} border ${borderSecondary} rounded-lg p-4 space-y-3 shadow-xl`}>
+            <h3 className={`text-xs font-bold ${textTertiary} uppercase tracking-wider`}>New Agent</h3>
             <input 
-              className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+              className={`w-full ${bgTertiary} border ${borderSecondary} rounded px-3 py-2 text-sm ${textPrimary} focus:outline-none focus:border-blue-500`}
               placeholder="Agent Name"
               value={newAgent.name}
               onChange={e => setNewAgent({...newAgent, name: e.target.value})}
             />
             
             <div className="space-y-1">
-              <label className="text-[10px] text-neutral-500 font-bold uppercase">Type</label>
+              <label className={`text-[10px] ${textSecondary} font-bold uppercase`}>Type</label>
               <select 
-                className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm text-white outline-none"
+                className={`w-full ${bgTertiary} border ${borderSecondary} rounded px-3 py-2 text-sm ${textPrimary} outline-none`}
                 value={newAgent.type}
                 onChange={e => setNewAgent({...newAgent, type: e.target.value as AgentType})}
               >
-                <option value={AgentType.WEB_SEARCH}>Live Web Search</option>
-                <option value={AgentType.TEXT}>Text Generation</option>
-                <option value={AgentType.REASONING}>Deep Reasoning (o1)</option>
-                <option value={AgentType.HUBSPOT}>HubSpot Sync</option>
+                <option value={AgentType.GOOGLE_SEARCH}>Google Search</option>
+                <option value={AgentType.WEB_SEARCH}>Websearch Agent</option>
+                <option value={AgentType.CONTENT_CREATION}>Content Creation</option>
               </select>
             </div>
 
-            {newAgent.type !== AgentType.HUBSPOT && (
-                <>
-                    <div className="space-y-1">
-                        <label className="text-[10px] text-neutral-500 font-bold uppercase flex items-center gap-1"><Globe className="w-3 h-3"/> Provider</label>
-                        <select 
-                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-xs text-white outline-none"
-                            value={newAgent.provider}
-                            onChange={e => {
-                                const p = e.target.value as AgentProvider;
-                                setNewAgent({...newAgent, provider: p, modelId: PROVIDER_MODELS[p][0].id });
-                            }}
-                            disabled={newAgent.type === AgentType.WEB_SEARCH || newAgent.type === AgentType.REASONING}
-                        >
-                            <option value={AgentProvider.GOOGLE}>Google Gemini</option>
-                            <option value={AgentProvider.OPENAI}>OpenAI</option>
-                            <option value={AgentProvider.ANTHROPIC}>Anthropic</option>
-                        </select>
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-[10px] text-neutral-500 font-bold uppercase flex items-center gap-1"><Cpu className="w-3 h-3"/> Model</label>
-                        <select 
-                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-xs text-white outline-none"
-                            value={newAgent.modelId}
-                            onChange={e => setNewAgent({...newAgent, modelId: e.target.value})}
-                            disabled={newAgent.type === AgentType.WEB_SEARCH || newAgent.type === AgentType.REASONING}
-                        >
-                            {PROVIDER_MODELS[newAgent.provider || AgentProvider.GOOGLE].map(m => (
-                                <option key={m.id} value={m.id}>{m.label}</option>
-                            ))}
-                        </select>
-                    </div>
-                </>
-            )}
+            <div className="space-y-1">
+                <label className={`text-[10px] ${textSecondary} font-bold uppercase flex items-center gap-1`}><Globe className="w-3 h-3"/> Provider</label>
+                <select 
+                    className={`w-full ${bgTertiary} border ${borderSecondary} rounded px-3 py-2 text-xs ${textPrimary} outline-none`}
+                    value={newAgent.provider}
+                    onChange={e => {
+                        const p = e.target.value as AgentProvider;
+                        setNewAgent({...newAgent, provider: p, modelId: PROVIDER_MODELS[p][0].id });
+                    }}
+                    disabled={newAgent.type === AgentType.GOOGLE_SEARCH}
+                >
+                    <option value={AgentProvider.GOOGLE}>Google Gemini</option>
+                    <option value={AgentProvider.OPENAI}>OpenAI</option>
+                    <option value={AgentProvider.ANTHROPIC}>Anthropic</option>
+                </select>
+            </div>
+            <div className="space-y-1">
+                <label className={`text-[10px] ${textSecondary} font-bold uppercase flex items-center gap-1`}><Cpu className="w-3 h-3"/> Model</label>
+                <select 
+                    className={`w-full ${bgTertiary} border ${borderSecondary} rounded px-3 py-2 text-xs ${textPrimary} outline-none`}
+                    value={newAgent.modelId}
+                    onChange={e => setNewAgent({...newAgent, modelId: e.target.value})}
+                    disabled={newAgent.type === AgentType.GOOGLE_SEARCH}
+                >
+                    {PROVIDER_MODELS[newAgent.provider || AgentProvider.GOOGLE].map(m => (
+                        <option key={m.id} value={m.id}>{m.label}</option>
+                    ))}
+                </select>
+            </div>
             
             <div className="space-y-1">
-              <label className="text-[10px] text-neutral-500 font-bold uppercase">Prompt</label>
+              <label className={`text-[10px] ${textSecondary} font-bold uppercase`}>Prompt</label>
               <textarea 
                 ref={promptRef}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm text-white min-h-[80px] focus:outline-none focus:border-blue-500 font-mono"
+                className={`w-full ${bgTertiary} border ${borderSecondary} rounded px-3 py-2 text-sm ${textPrimary} min-h-[80px] focus:outline-none focus:border-blue-500 font-mono`}
                 placeholder="Type / to reference fields..."
                 value={newAgent.prompt}
                 onChange={e => handleTextChange(e, 'prompt')}
@@ -233,10 +239,10 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, on
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] text-neutral-500 font-bold uppercase">Condition</label>
+              <label className={`text-[10px] ${textSecondary} font-bold uppercase`}>Condition</label>
               <textarea 
                 ref={conditionRef}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-xs text-neutral-400 min-h-[40px] focus:outline-none focus:border-blue-500 font-mono"
+                className={`w-full ${bgTertiary} border ${borderSecondary} rounded px-3 py-2 text-xs ${textTertiary} min-h-[40px] focus:outline-none focus:border-blue-500 font-mono`}
                 placeholder="Skip logic (e.g. /email != '')"
                 value={newAgent.condition}
                 onChange={e => handleTextChange(e, 'condition')}
@@ -244,9 +250,9 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, on
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] text-neutral-500 font-bold uppercase">Target Output Field</label>
+              <label className={`text-[10px] ${textSecondary} font-bold uppercase`}>Target Output Field</label>
               <select 
-                className="w-full bg-neutral-900 border border-neutral-700 rounded px-3 py-2 text-sm text-white outline-none"
+                className={`w-full ${bgTertiary} border ${borderSecondary} rounded px-3 py-2 text-sm ${textPrimary} outline-none`}
                 value={targetColId}
                 onChange={e => setTargetColId(e.target.value)}
               >
@@ -256,28 +262,29 @@ const AgentPanel: React.FC<AgentPanelProps> = ({ agents, columns, onRunAgent, on
 
             <div className="flex gap-2 pt-2">
               <button onClick={handleAdd} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded">Create</button>
-              <button onClick={() => setShowForm(false)} className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-bold py-2 rounded">Cancel</button>
+              <button onClick={() => setShowForm(false)} className={`flex-1 ${isDarkMode ? 'bg-[#1e2d3d] hover:bg-[#263a4f] text-neutral-300' : 'bg-neutral-200 hover:bg-neutral-300 text-gray-700'} text-xs font-bold py-2 rounded`}>Cancel</button>
             </div>
           </div>
         )}
 
         {agents.map((agent) => (
-          <div key={agent.id} className="bg-[#181818] border border-neutral-800 rounded-lg p-4 group">
+          <div key={agent.id} className={`${bgSecondary} border ${borderMain} rounded-lg p-4 group`}>
             <div className="flex items-start justify-between mb-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white uppercase tracking-tight">{agent.name}</span>
+                  <span className={`text-xs font-bold ${textPrimary} uppercase tracking-tight`}>{agent.name}</span>
                   <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                    agent.type === AgentType.WEB_SEARCH ? 'bg-blue-900/30 text-blue-400' : 
-                    agent.type === AgentType.REASONING ? 'bg-purple-900/30 text-purple-400' :
-                    'bg-neutral-800 text-neutral-400'
+                    agent.type === AgentType.GOOGLE_SEARCH ? 'bg-blue-900/30 text-blue-400' : 
+                    agent.type === AgentType.WEB_SEARCH ? 'bg-emerald-900/30 text-emerald-400' :
+                    'bg-amber-900/30 text-amber-400'
                   }`}>
-                    {agent.type}
+                    {agent.type === AgentType.GOOGLE_SEARCH ? 'Google Search' : 
+                     agent.type === AgentType.WEB_SEARCH ? 'Websearch' : 'Content'}
                   </span>
                 </div>
-                <p className="text-[11px] text-neutral-500 mt-1 line-clamp-2">{agent.prompt}</p>
+                <p className={`text-[11px] ${textSecondary} mt-1 line-clamp-2`}>{agent.prompt}</p>
                 {agent.provider !== AgentProvider.GOOGLE && (
-                     <div className="mt-1 flex items-center gap-1 text-[9px] text-neutral-600">
+                     <div className={`mt-1 flex items-center gap-1 text-[9px] ${isDarkMode ? 'text-neutral-600' : 'text-neutral-700'}`}>
                         <Cpu className="w-2.5 h-2.5"/> {agent.modelId}
                      </div>
                 )}

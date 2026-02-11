@@ -1,7 +1,12 @@
 
-export const runAnthropicAgent = async (modelId: string, prompt: string, apiKey: string, systemInstruction?: string) => {
+export const runAnthropicAgent = async (
+  modelId: string, 
+  prompt: string, 
+  apiKey: string, 
+  systemInstruction?: string
+) => {
   if (!apiKey) {
-    return JSON.stringify({ error: "Anthropic API Key missing in settings." });
+    return JSON.stringify({ error: "Anthropic API Key missing. Please add it in Settings." });
   }
 
   try {
@@ -9,16 +14,14 @@ export const runAnthropicAgent = async (modelId: string, prompt: string, apiKey:
       method: 'POST',
       headers: {
         'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'anthropic-version': '2024-10-22',
         'content-type': 'application/json',
-        // Note: Client-side calls to Anthropic often fail CORS. 
-        // In production, this requires a proxy. For this demo, we attempt direct call.
-        'dangerously-allow-browser': 'true' 
+        'anthropic-dangerous-direct-browser-access': 'true'
       },
       body: JSON.stringify({
         model: modelId,
-        max_tokens: 1024,
-        system: systemInstruction || "You are a helpful assistant. Output valid JSON.",
+        max_tokens: 4096,
+        system: systemInstruction || "You are a helpful assistant. Always return your response as a valid JSON object.",
         messages: [
           { role: "user", content: prompt }
         ]
@@ -26,14 +29,23 @@ export const runAnthropicAgent = async (modelId: string, prompt: string, apiKey:
     });
 
     if (!response.ok) {
-       const err = await response.text();
-       throw new Error(`Anthropic API Error: ${err}`);
+      const errData = await response.json().catch(() => null);
+      const errMsg = errData?.error?.message || `HTTP ${response.status}: ${response.statusText}`;
+      throw new Error(errMsg);
     }
 
     const data = await response.json();
     return data.content?.[0]?.text || "";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Anthropic Error:", error);
-    return JSON.stringify({ error: "Error calling Claude API. Note: Browser calls may be blocked by CORS." });
+    const message = error?.message || String(error);
+
+    // Detect CORS errors
+    if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
+      return JSON.stringify({ 
+        error: "Anthropic API call blocked by browser CORS policy. Direct browser-to-Anthropic calls require their CORS header. If this persists, try using Google Gemini provider instead." 
+      });
+    }
+    return JSON.stringify({ error: `Anthropic call failed: ${message}` });
   }
 };
