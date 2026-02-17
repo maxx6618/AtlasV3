@@ -22,11 +22,6 @@ interface UploadModalProps {
   columns: ColumnDefinition[];
   sheets: SheetTab[];
   activeSheetId: string;
-  apiKeys?: {
-    google?: string;
-    openai?: string;
-    anthropic?: string;
-  };
   matchConfig: {
     provider: string;
     modelId: string;
@@ -44,7 +39,6 @@ const UploadModal: React.FC<UploadModalProps> = ({
   columns,
   sheets,
   activeSheetId,
-  apiKeys,
   matchConfig,
   isDarkMode,
   initialFile,
@@ -180,13 +174,6 @@ const UploadModal: React.FC<UploadModalProps> = ({
       modelId: matchConfig.modelId,
       confidenceThreshold: matchConfig.confidenceThreshold,
       useFuzzyMatching: matchConfig.useFuzzyMatching,
-      apiKey:
-        matchConfig.provider === 'OPENAI'
-          ? apiKeys?.openai
-          : matchConfig.provider === 'ANTHROPIC'
-            ? apiKeys?.anthropic
-            : apiKeys?.google,
-      apiKeys
     })
       .then(result => {
         const nextMapping: Record<string, string> = {};
@@ -214,7 +201,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
       .finally(() => {
         setIsMatching(false);
       });
-  }, [parsed, activeParsedSheet, sheets, columns, apiKeys, matchConfig, sheetTargets, activeSheetId]);
+  }, [parsed, activeParsedSheet, sheets, columns, matchConfig, sheetTargets, activeSheetId]);
 
   const canImport = Boolean(parsed && parsedSheets.length > 0 && !isParsing && !isMatching);
 

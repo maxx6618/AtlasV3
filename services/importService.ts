@@ -30,12 +30,6 @@ export interface HeaderMatchConfig {
   modelId: string;
   confidenceThreshold: number;
   useFuzzyMatching: boolean;
-  apiKey?: string;
-  apiKeys?: {
-    google?: string;
-    anthropic?: string;
-    openai?: string;
-  };
 }
 
 export const normalizeHeader = (header: string) =>
@@ -185,14 +179,7 @@ export const matchHeadersWithLLM = async (
   targetHeaders: string[],
   config: HeaderMatchConfig
 ): Promise<HeaderMatch[]> => {
-  const fallbackKeys = config.apiKeys || {};
-  const mergedKeys = {
-    google: config.provider === AgentProvider.GOOGLE ? config.apiKey : fallbackKeys.google,
-    anthropic: config.provider === AgentProvider.ANTHROPIC ? config.apiKey : fallbackKeys.anthropic,
-    openai: config.provider === AgentProvider.OPENAI ? config.apiKey : fallbackKeys.openai
-  };
-
-  if ((!mergedKeys.google && !mergedKeys.anthropic && !mergedKeys.openai) || targetHeaders.length === 0 || !config.useFuzzyMatching) {
+  if (targetHeaders.length === 0 || !config.useFuzzyMatching) {
     return simpleHeaderMatch(sourceHeaders, targetHeaders);
   }
 
@@ -210,37 +197,24 @@ export const matchHeadersWithLLM = async (
   try {
     const systemInstruction = 'You are a data mapping assistant. Return a single valid JSON object only.';
     const providerOrder = [
-      {
-        provider: AgentProvider.GOOGLE,
-        apiKey: mergedKeys.google,
-        modelId: config.modelId || 'gemini-2.5-flash-lite'
-      },
-      {
-        provider: AgentProvider.ANTHROPIC,
-        apiKey: mergedKeys.anthropic,
-        modelId: 'claude-haiku-4-5'
-      },
-      {
-        provider: AgentProvider.OPENAI,
-        apiKey: mergedKeys.openai,
-        modelId: 'gpt-4o-mini'
-      }
+      { provider: AgentProvider.GOOGLE, modelId: config.modelId || 'gemini-2.5-flash-lite' },
+      { provider: AgentProvider.ANTHROPIC, modelId: 'claude-haiku-4-5' },
+      { provider: AgentProvider.OPENAI, modelId: 'gpt-4o-mini' },
     ];
 
     let lastError: Error | null = null;
     for (const candidate of providerOrder) {
-      if (!candidate.apiKey) continue;
       try {
         let raw = '';
         switch (candidate.provider) {
           case AgentProvider.OPENAI:
-            raw = await runOpenAIAgent(candidate.modelId, prompt, candidate.apiKey, systemInstruction);
+            raw = await runOpenAIAgent(candidate.modelId, prompt, undefined, systemInstruction);
             break;
           case AgentProvider.ANTHROPIC:
-            raw = await runAnthropicAgent(candidate.modelId, prompt, candidate.apiKey, systemInstruction);
+            raw = await runAnthropicAgent(candidate.modelId, prompt, undefined, systemInstruction);
             break;
           default:
-            raw = await runJSONTask(candidate.modelId, prompt, systemInstruction, candidate.apiKey);
+            raw = await runJSONTask(candidate.modelId, prompt, systemInstruction);
             break;
         }
 

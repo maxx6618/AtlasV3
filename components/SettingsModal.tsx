@@ -121,45 +121,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             <div className="space-y-2.5">
-                <p className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-[#4a6078]' : 'text-neutral-400'}`}>API Keys</p>
-                <div className="space-y-1.5">
-                    <label className="text-[10px] text-blue-400 font-bold uppercase tracking-widest flex items-center gap-2">
-                        Google Gemini API Key
-                    </label>
-                    <input 
-                        type="password"
-                        className={`${inputCls} focus:border-blue-500`}
-                        placeholder="AIzaSy..."
-                        value={localSettings.googleApiKey}
-                        onChange={e => handleChange('googleApiKey', e.target.value)}
-                    />
-                </div>
-
-                <div className="space-y-1.5">
-                    <label className="text-[10px] text-green-400 font-bold uppercase tracking-widest flex items-center gap-2">
-                        OpenAI API Key
-                    </label>
-                    <input 
-                        type="password"
-                        className={`${inputCls} focus:border-green-500`}
-                        placeholder="sk-..."
-                        value={localSettings.openaiApiKey}
-                        onChange={e => handleChange('openaiApiKey', e.target.value)}
-                    />
-                </div>
-
-                <div className="space-y-1.5">
-                    <label className="text-[10px] text-amber-400 font-bold uppercase tracking-widest flex items-center gap-2">
-                        Anthropic API Key
-                    </label>
-                    <input 
-                        type="password"
-                        className={`${inputCls} focus:border-amber-500`}
-                        placeholder="sk-ant-..."
-                        value={localSettings.anthropicApiKey}
-                        onChange={e => handleChange('anthropicApiKey', e.target.value)}
-                    />
-                </div>
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-[#4a6078]' : 'text-neutral-400'}`}>Agent Settings</p>
 
                 <div className="space-y-1.5">
                     <label className="text-[10px] text-cyan-400 font-bold uppercase tracking-widest flex items-center gap-2">
@@ -176,20 +138,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-[10px] text-blue-300 font-bold uppercase tracking-widest flex items-center gap-2">
-                        Serper.dev API Key
-                    </label>
-                    <input 
-                        type="password"
-                        className={`${inputCls} focus:border-blue-400`}
-                        placeholder="serper_..."
-                        value={localSettings.serperApiKey}
-                        onChange={e => handleChange('serperApiKey', e.target.value)}
-                    />
-                    <p className={`text-[10px] italic ${isDarkMode ? 'text-[#4a6078]' : 'text-neutral-400'}`}>Fast Google Search API alternative.</p>
-                </div>
-
-                <div className="space-y-1.5">
                     <label className="text-[10px] text-blue-400 font-bold uppercase tracking-widest flex items-center gap-2">
                         Research Steps (2-5)
                     </label>
@@ -203,20 +151,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         onChange={e => handleStepChange(Number(e.target.value))}
                     />
                     <p className={`text-[10px] italic ${isDarkMode ? 'text-[#4a6078]' : 'text-neutral-400'}`}>Limits the number of research steps for search agents. Default is 2.</p>
-                </div>
-
-                <div className="space-y-1.5">
-                    <label className="text-[10px] text-purple-400 font-bold uppercase tracking-widest flex items-center gap-2">
-                        Apify API Token
-                    </label>
-                    <input 
-                        type="password"
-                        className={`${inputCls} focus:border-purple-500`}
-                        placeholder="apify_api_..."
-                        value={localSettings.apifyApiKey}
-                        onChange={e => handleChange('apifyApiKey', e.target.value)}
-                    />
-                    <p className={`text-[10px] italic ${isDarkMode ? 'text-[#4a6078]' : 'text-neutral-400'}`}>Enables real Google Search scraping & LinkedIn profile access via Apify actors.</p>
                 </div>
 
                 <div className="space-y-1.5">
@@ -351,7 +285,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className={`p-3 rounded-xl flex gap-2 border ${isDarkMode ? 'bg-[#0f172a]/50 border-[#1e2d3d]' : 'bg-blue-50 border-blue-100'}`}>
                 <ShieldCheck className={`w-4 h-4 shrink-0 ${isDarkMode ? 'text-[#5a7a94]' : 'text-blue-400'}`} />
                 <p className={`text-[10px] leading-relaxed ${isDarkMode ? 'text-[#5a7a94]' : 'text-blue-600'}`}>
-                    When Supabase is enabled, keys are stored in Supabase (app_settings) and cached locally. Without Supabase, keys stay only in your browser's local storage. Keys are used directly to make API calls to the respective providers.
+                    API keys for LLM providers (Gemini, OpenAI, Anthropic, Serper, Apify, ElevenLabs) are managed securely on the server. Only the OpenRegister key is stored locally.
                 </p>
             </div>
 

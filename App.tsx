@@ -108,11 +108,6 @@ const getDefaultModelByProvider = (provider: AgentProvider) => {
 };
 
 const getDefaultAppSettings = (): AppSettings => ({
-  googleApiKey: '',
-  openaiApiKey: '',
-  anthropicApiKey: '',
-  apifyApiKey: '',
-  serperApiKey: '',
   apifyWebSearchEnabled: false,
   openRegisterApiKey: '',
   researchSteps: 2,
@@ -138,8 +133,7 @@ const normalizeAppSettings = (settings: Partial<AppSettings>): AppSettings => {
       getDefaultModelByProvider(merged.uploadMatchProvider || AgentProvider.GOOGLE),
     uploadMatchProvider: merged.uploadMatchProvider || AgentProvider.GOOGLE,
     uploadMatchEnabled: merged.uploadMatchEnabled ?? true,
-    apifyWebSearchEnabled: merged.apifyWebSearchEnabled ?? false,
-    serperApiKey: merged.serperApiKey || ''
+    apifyWebSearchEnabled: merged.apifyWebSearchEnabled ?? false
   };
 };
 
@@ -497,9 +491,7 @@ const App: React.FC = () => {
     setIsSettingsModalOpen(false);
     showNotification('Settings saved successfully.');
 
-    if (sanitizedSettings.apifyWebSearchEnabled && !sanitizedSettings.apifyApiKey) {
-      openApiKeyModal('APIFY');
-    }
+    // API keys are managed server-side via Vercel env vars
   };
 
   const saveSettingsPatch = useCallback(
@@ -514,69 +506,55 @@ const App: React.FC = () => {
   );
 
   const testAndSaveApiKey = useCallback(async (provider: ApiKeyProvider, apiKey: string) => {
+    // API keys are managed server-side. Test via proxy endpoints.
     switch (provider) {
       case 'GOOGLE': {
-        await runAgentTask('gemini-2.5-flash', 'Test connection', undefined, apiKey);
-        saveSettingsPatch({ googleApiKey: apiKey });
+        await runAgentTask('gemini-2.5-flash', 'Test connection');
         break;
       }
       case 'OPENAI': {
-        const response = await fetch('https://api.openai.com/v1/models', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
+        const response = await fetch('/api/openai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'test' }),
         });
         if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(`OpenAI key test failed: ${errText.substring(0, 200)}`);
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || 'OpenAI key test failed');
         }
-        saveSettingsPatch({ openaiApiKey: apiKey });
         break;
       }
       case 'ANTHROPIC': {
-        const response = await fetch('https://api.anthropic.com/v1/models', {
-          method: 'GET',
-          headers: {
-            'x-api-key': apiKey,
-            'anthropic-version': '2024-10-22',
-            'content-type': 'application/json',
-            'anthropic-dangerous-direct-browser-access': 'true'
-          }
+        const response = await fetch('/api/anthropic', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'test' }),
         });
         if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(`Anthropic key test failed: ${errText.substring(0, 200)}`);
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || 'Anthropic key test failed');
         }
-        saveSettingsPatch({ anthropicApiKey: apiKey });
         break;
       }
       case 'SERPER': {
-        const result = await serperGoogleSearch('test', apiKey, 1);
-        if (result.error) {
-          throw new Error(`Serper key test failed: ${result.error}`);
-        }
-        saveSettingsPatch({ serperApiKey: apiKey });
+        const result = await serperGoogleSearch('test', undefined, 1);
+        if (result.error) throw new Error(`Serper key test failed: ${result.error}`);
         break;
       }
       case 'APIFY': {
-        const result = await apifySearchAndCollect('test', apiKey, 1);
-        if (result.error) {
-          throw new Error(`Apify key test failed: ${result.error}`);
-        }
-        saveSettingsPatch({ apifyApiKey: apiKey });
+        const result = await apifySearchAndCollect('test', undefined, 1);
+        if (result.error) throw new Error(`Apify key test failed: ${result.error}`);
         break;
       }
       default:
         break;
     }
-  }, [saveSettingsPatch]);
+  }, []);
 
-  const ensureApiKey = useCallback((provider: ApiKeyProvider, apiKey?: string) => {
-    if (apiKey) return true;
-    openApiKeyModal(provider);
-    return false;
-  }, [openApiKeyModal]);
+  // Keys are server-side, always available
+  const ensureApiKey = useCallback((_provider: ApiKeyProvider, _apiKey?: string) => {
+    return true;
+  }, []);
 
   // ── Derived state ──────────────────────────────────────────────
 
@@ -599,7 +577,7 @@ const App: React.FC = () => {
   );
   const activeSheetRef = useRef<SheetTab>(activeSheet);
 
-  const hasAnyLlmKey = Boolean(appSettings.googleApiKey || appSettings.anthropicApiKey || appSettings.openaiApiKey);
+  const hasAnyLlmKey = true; // Keys are managed server-side
 
   useEffect(() => {
     activeSheetRef.current = activeSheet;
@@ -2324,32 +2302,7 @@ const App: React.FC = () => {
       return;
     }
 
-    const providerKey =
-      agent.provider === AgentProvider.OPENAI
-        ? appSettings.openaiApiKey
-        : agent.provider === AgentProvider.ANTHROPIC
-          ? appSettings.anthropicApiKey
-          : appSettings.googleApiKey;
-
-    if (!ensureApiKey(
-      agent.provider === AgentProvider.OPENAI
-        ? 'OPENAI'
-        : agent.provider === AgentProvider.ANTHROPIC
-          ? 'ANTHROPIC'
-          : 'GOOGLE',
-      providerKey
-    )) {
-      setIsProcessing(false);
-      clearProcessingController(controller);
-      return;
-    }
-
-    if ((agent.type === AgentType.GOOGLE_SEARCH || agent.type === AgentType.WEB_SEARCH) && appSettings.apifyWebSearchEnabled && !appSettings.apifyApiKey) {
-      openApiKeyModal('APIFY');
-      setIsProcessing(false);
-      clearProcessingController(controller);
-      return;
-    }
+    // API keys are managed server-side via Vercel env vars
 
     try {
       await Promise.all(rowsToProcess.map(async (row) => {
@@ -2406,9 +2359,9 @@ const App: React.FC = () => {
           let searchSources: string[] = [];
           stepsTaken = 1;
 
-          if (appSettings.serperApiKey) {
+          {
             const searchQuery = `${resolvedPrompt} ${inputSummary}`.substring(0, 300);
-            const serperResult = await serperGoogleSearch(searchQuery, appSettings.serperApiKey, 8);
+            const serperResult = await serperGoogleSearch(searchQuery, undefined, 8);
             if (serperResult.results.length > 0) {
               searchSources = serperResult.results.map(r => r.url);
               searchContext = serperResult.results
@@ -2418,9 +2371,9 @@ const App: React.FC = () => {
             }
           }
 
-          if (!searchContext && appSettings.apifyWebSearchEnabled && appSettings.apifyApiKey) {
+          if (!searchContext && appSettings.apifyWebSearchEnabled) {
             const searchQuery = `${resolvedPrompt} ${inputSummary}`.substring(0, 300);
-            const apifyResult = await apifySearchAndCollect(searchQuery, appSettings.apifyApiKey, 8);
+            const apifyResult = await apifySearchAndCollect(searchQuery, undefined, 8);
             if (apifyResult.searchResults.length > 0) {
               searchSources = apifyResult.searchResults.map(r => r.url);
               searchContext = apifyResult.searchResults
@@ -2445,13 +2398,13 @@ const App: React.FC = () => {
             let rawJson = '';
             switch (agent.provider) {
               case AgentProvider.OPENAI:
-                rawJson = await runOpenAIAgent(agent.modelId, structurePrompt, appSettings.openaiApiKey, systemInstruction);
+                rawJson = await runOpenAIAgent(agent.modelId, structurePrompt, systemInstruction);
                 break;
               case AgentProvider.ANTHROPIC:
-                rawJson = await runAnthropicAgent(agent.modelId, structurePrompt, appSettings.anthropicApiKey, systemInstruction);
+                rawJson = await runAnthropicAgent(agent.modelId, structurePrompt, systemInstruction);
                 break;
               default:
-                rawJson = await runJSONTask('gemini-2.5-flash', structurePrompt, systemInstruction, appSettings.googleApiKey);
+                rawJson = await runJSONTask('gemini-2.5-flash', structurePrompt, systemInstruction);
                 break;
             }
             stepsTaken++;
@@ -2463,7 +2416,7 @@ const App: React.FC = () => {
               const searchPrompt = [`Research the following:`, resolvedPrompt, ``, `Context data:`, inputSummary].join('\n');
               const structurePrompt = `Original task: "${resolvedPrompt}"`;
               if (signal.aborted) return;
-              const searchResult = await runSearchAndStructure(searchPrompt, structurePrompt, agent.outputs, appSettings.googleApiKey, appSettings.researchSteps);
+              const searchResult = await runSearchAndStructure(searchPrompt, structurePrompt, agent.outputs, appSettings.researchSteps);
               stepsTaken = appSettings.researchSteps + 1; // Research steps + final structuring step
               try { const cleanJson = searchResult.text.replace(/```json|```/g, '').trim(); resultData = JSON.parse(cleanJson); } catch { resultData = { result: searchResult.text }; }
               if (searchResult.sources.length > 0) {
@@ -2476,13 +2429,13 @@ const App: React.FC = () => {
               let rawResponse = '';
               switch (agent.provider) {
                 case AgentProvider.OPENAI:
-                  rawResponse = await runOpenAIAgent(agent.modelId, taskPrompt, appSettings.openaiApiKey, systemInstruction);
+                  rawResponse = await runOpenAIAgent(agent.modelId, taskPrompt, systemInstruction);
                   break;
                 case AgentProvider.ANTHROPIC:
-                  rawResponse = await runAnthropicAgent(agent.modelId, taskPrompt, appSettings.anthropicApiKey, systemInstruction);
+                  rawResponse = await runAnthropicAgent(agent.modelId, taskPrompt, systemInstruction);
                   break;
                 default:
-                  rawResponse = await runJSONTask(agent.modelId || 'gemini-2.5-flash', taskPrompt, systemInstruction, appSettings.googleApiKey);
+                  rawResponse = await runJSONTask(agent.modelId || 'gemini-2.5-flash', taskPrompt, systemInstruction);
                   break;
               }
               try { resultData = JSON.parse(rawResponse.replace(/```json|```/g, '').trim()); } catch { resultData = { result: rawResponse }; }
@@ -2493,9 +2446,9 @@ const App: React.FC = () => {
           let rawResponse = '';
           let searchContext = '';
 
-          if (appSettings.serperApiKey) {
+          {
             const searchQuery = `${resolvedPrompt} ${inputSummary}`.substring(0, 300);
-            const serperResult = await serperGoogleSearch(searchQuery, appSettings.serperApiKey, 8);
+            const serperResult = await serperGoogleSearch(searchQuery, undefined, 8);
             if (serperResult.results.length > 0) {
               resultData._sources = serperResult.results.map(r => r.url);
               searchContext = serperResult.results
@@ -2504,9 +2457,9 @@ const App: React.FC = () => {
             }
           }
 
-          if (!searchContext && appSettings.apifyWebSearchEnabled && appSettings.apifyApiKey) {
+          if (!searchContext && appSettings.apifyWebSearchEnabled) {
             const searchQuery = `${resolvedPrompt} ${inputSummary}`.substring(0, 300);
-            const apifyResult = await apifySearchAndCollect(searchQuery, appSettings.apifyApiKey, 8);
+            const apifyResult = await apifySearchAndCollect(searchQuery, undefined, 8);
             if (apifyResult.searchResults.length > 0) {
               resultData._sources = apifyResult.searchResults.map(r => r.url);
               searchContext = apifyResult.searchResults
@@ -2515,12 +2468,12 @@ const App: React.FC = () => {
             }
           }
 
-          if (!searchContext && agent.provider === AgentProvider.GOOGLE && appSettings.googleApiKey) {
+          if (!searchContext && agent.provider === AgentProvider.GOOGLE) {
             try {
               const searchPrompt = [`Research the following:`, resolvedPrompt, ``, `Context data:`, inputSummary].join('\n');
               const structurePrompt = `Original task: "${resolvedPrompt}"`;
               if (signal.aborted) return;
-              const searchResult = await runSearchAndStructure(searchPrompt, structurePrompt, agent.outputs, appSettings.googleApiKey, appSettings.researchSteps);
+              const searchResult = await runSearchAndStructure(searchPrompt, structurePrompt, agent.outputs, appSettings.researchSteps);
               rawResponse = searchResult.text;
               if (searchResult.sources.length > 0) sources = searchResult.sources;
             } catch (e) { console.error('Gemini search fallback failed:', e); }
@@ -2540,15 +2493,15 @@ const App: React.FC = () => {
             switch (agent.provider) {
               case AgentProvider.OPENAI:
                 if (signal.aborted) return;
-                rawResponse = await runOpenAIAgent(agent.modelId, structurePrompt, appSettings.openaiApiKey, systemInstruction);
+                rawResponse = await runOpenAIAgent(agent.modelId, structurePrompt, systemInstruction);
                 break;
               case AgentProvider.ANTHROPIC:
                 if (signal.aborted) return;
-                rawResponse = await runAnthropicAgent(agent.modelId, structurePrompt, appSettings.anthropicApiKey, systemInstruction);
+                rawResponse = await runAnthropicAgent(agent.modelId, structurePrompt, systemInstruction);
                 break;
               default:
                 if (signal.aborted) return;
-                rawResponse = await runJSONTask(agent.modelId || 'gemini-2.5-flash', structurePrompt, systemInstruction, appSettings.googleApiKey);
+                rawResponse = await runJSONTask(agent.modelId || 'gemini-2.5-flash', structurePrompt, systemInstruction);
                 break;
             }
           } else if (!rawResponse) {
@@ -2557,15 +2510,15 @@ const App: React.FC = () => {
             switch (agent.provider) {
               case AgentProvider.OPENAI:
                 if (signal.aborted) return;
-                rawResponse = await runOpenAIAgent(agent.modelId, taskPrompt, appSettings.openaiApiKey, systemInstruction);
+                rawResponse = await runOpenAIAgent(agent.modelId, taskPrompt, systemInstruction);
                 break;
               case AgentProvider.ANTHROPIC:
                 if (signal.aborted) return;
-                rawResponse = await runAnthropicAgent(agent.modelId, taskPrompt, appSettings.anthropicApiKey, systemInstruction);
+                rawResponse = await runAnthropicAgent(agent.modelId, taskPrompt, systemInstruction);
                 break;
               default:
                 if (signal.aborted) return;
-                rawResponse = await runJSONTask(agent.modelId || 'gemini-2.5-flash', taskPrompt, systemInstruction, appSettings.googleApiKey);
+                rawResponse = await runJSONTask(agent.modelId || 'gemini-2.5-flash', taskPrompt, systemInstruction);
                 break;
             }
           }
@@ -2583,15 +2536,15 @@ const App: React.FC = () => {
           switch (agent.provider) {
             case AgentProvider.OPENAI:
               if (signal.aborted) return;
-              rawResponse = await runOpenAIAgent(agent.modelId, taskPrompt, appSettings.openaiApiKey, systemInstruction);
+              rawResponse = await runOpenAIAgent(agent.modelId, taskPrompt, systemInstruction);
               break;
             case AgentProvider.ANTHROPIC:
               if (signal.aborted) return;
-              rawResponse = await runAnthropicAgent(agent.modelId, taskPrompt, appSettings.anthropicApiKey, systemInstruction);
+              rawResponse = await runAnthropicAgent(agent.modelId, taskPrompt, systemInstruction);
               break;
             default:
               if (signal.aborted) return;
-              rawResponse = await runJSONTask(agent.modelId, taskPrompt, systemInstruction, appSettings.googleApiKey);
+              rawResponse = await runJSONTask(agent.modelId, taskPrompt, systemInstruction);
               break;
           }
           try { resultData = JSON.parse(rawResponse.replace(/```json|```/g, '').trim()); } catch { resultData = { result: rawResponse }; }
@@ -3468,11 +3421,6 @@ const App: React.FC = () => {
           columns={activeSheet.columns}
           sheets={activeVertical.sheets}
           activeSheetId={activeSheetId}
-          apiKeys={{
-            google: appSettings.googleApiKey,
-            openai: appSettings.openaiApiKey,
-            anthropic: appSettings.anthropicApiKey
-          }}
           matchConfig={{
             provider: appSettings.uploadMatchProvider,
             modelId: appSettings.uploadMatchModelId,
@@ -3516,11 +3464,6 @@ const App: React.FC = () => {
           selectedRowsCount={selectedRows.size}
           totalRowsCount={activeSheet.rows.length}
           initialTargetColId={targetColumnId}
-          apiKeys={{ 
-            google: appSettings.googleApiKey,
-            openai: appSettings.openaiApiKey,
-            anthropic: appSettings.anthropicApiKey
-          }}
           matchProvider={appSettings.uploadMatchProvider}
           matchModelId={appSettings.uploadMatchModelId}
           existingAgent={targetColumnId ? activeSheet.agents.find(a => {

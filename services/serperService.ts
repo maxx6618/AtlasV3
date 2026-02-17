@@ -1,5 +1,5 @@
 /**
- * Serper.dev Google Search integration.
+ * Serper.dev Google Search integration (via serverless proxy).
  * Returns structured search results with titles, URLs, and descriptions.
  */
 
@@ -12,40 +12,23 @@ interface SerperResult {
 
 export const serperGoogleSearch = async (
   query: string,
-  apiKey: string,
+  _apiKey?: string,
   maxResults: number = 10
 ): Promise<{ results: SerperResult[]; error?: string }> => {
-  if (!apiKey) {
-    return { results: [], error: 'Serper API key is missing. Add it in Settings.' };
-  }
-
   try {
-    const response = await fetch('https://google.serper.dev/search', {
+    const response = await fetch('/api/serper', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-KEY': apiKey
-      },
-      body: JSON.stringify({
-        q: query,
-        num: maxResults
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, maxResults }),
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Serper API error (${response.status}): ${errText.substring(0, 200)}`);
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${response.status}`);
     }
 
     const data = await response.json();
-    const organic = Array.isArray(data?.organic) ? data.organic : [];
-    const results = organic.slice(0, maxResults).map((item: any) => ({
-      title: item?.title || '',
-      url: item?.link || '',
-      description: item?.snippet || ''
-    }));
-
-    return { results };
+    return { results: data.results || [] };
   } catch (error: any) {
     console.error('Serper search error:', error);
     return { results: [], error: error.message || 'Serper search failed' };

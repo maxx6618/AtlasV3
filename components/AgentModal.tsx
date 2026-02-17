@@ -15,7 +15,6 @@ interface AgentModalProps {
   onClose: () => void;
   selectedRowsCount: number;
   initialTargetColId?: string;
-  apiKeys: { google: string; openai?: string; anthropic?: string };
   existingAgent?: AgentConfig;
   totalRowsCount?: number;
   matchProvider?: AgentProvider;
@@ -44,7 +43,7 @@ const PROVIDER_MODELS = {
   ]
 };
 
-const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onUpdateAgent, onClose, selectedRowsCount, initialTargetColId, apiKeys, existingAgent, totalRowsCount = 0, matchProvider = AgentProvider.GOOGLE, matchModelId = 'gemini-2.0-flash-lite', isDarkMode }: AgentModalProps) => {
+const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onUpdateAgent, onClose, selectedRowsCount, initialTargetColId, existingAgent, totalRowsCount = 0, matchProvider = AgentProvider.GOOGLE, matchModelId = 'gemini-2.0-flash-lite', isDarkMode }: AgentModalProps) => {
   const isEditMode = !!existingAgent;
   
   const [name, setName] = useState(existingAgent?.name || '');
@@ -135,10 +134,7 @@ const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onUpdateAgent, on
   const generateAgentName = async (promptText: string): Promise<string> => {
     if (!promptText.trim()) return 'Untitled Agent';
     
-    const hasApiKey = Boolean(apiKeys.google || apiKeys.anthropic || apiKeys.openai);
-    
-    if (hasApiKey) {
-      // Use AI model for name generation (same as fuzzy matching)
+    {
       const namePrompt = [
         `Based on the following agent instruction, generate a concise, professional name (2-3 words preferred, max 4 words).`,
         `The name should describe the OUTPUT DATA FIELD or RESULT, not the action.`,
@@ -165,36 +161,23 @@ const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onUpdateAgent, on
 
       try {
         const providerOrder = [
-          {
-            provider: AgentProvider.GOOGLE,
-            apiKey: apiKeys.google,
-            modelId: matchModelId || 'gemini-2.0-flash-lite'
-          },
-          {
-            provider: AgentProvider.ANTHROPIC,
-            apiKey: apiKeys.anthropic,
-            modelId: 'claude-haiku-4-5'
-          },
-          {
-            provider: AgentProvider.OPENAI,
-            apiKey: apiKeys.openai,
-            modelId: 'gpt-4o-mini'
-          }
+          { provider: AgentProvider.GOOGLE, modelId: matchModelId || 'gemini-2.0-flash-lite' },
+          { provider: AgentProvider.ANTHROPIC, modelId: 'claude-haiku-4-5' },
+          { provider: AgentProvider.OPENAI, modelId: 'gpt-4o-mini' },
         ];
 
         let generatedName = '';
         for (const candidate of providerOrder) {
-          if (!candidate.apiKey) continue;
           try {
             switch (candidate.provider) {
               case AgentProvider.OPENAI:
-                generatedName = await runOpenAIAgent(candidate.modelId, namePrompt, candidate.apiKey, systemInstruction);
+                generatedName = await runOpenAIAgent(candidate.modelId, namePrompt, undefined, systemInstruction);
                 break;
               case AgentProvider.ANTHROPIC:
-                generatedName = await runAnthropicAgent(candidate.modelId, namePrompt, candidate.apiKey, systemInstruction);
+                generatedName = await runAnthropicAgent(candidate.modelId, namePrompt, undefined, systemInstruction);
                 break;
               default:
-                generatedName = await runAgentTask(candidate.modelId, namePrompt, systemInstruction, candidate.apiKey);
+                generatedName = await runAgentTask(candidate.modelId, namePrompt, systemInstruction);
                 break;
             }
 
@@ -312,11 +295,6 @@ const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onUpdateAgent, on
         setErrorMsg("Please enter an instruction prompt first.");
         return;
     }
-    if (!apiKeys.google) {
-        setErrorMsg("Google API Key is missing. Please add it in Settings (gear icon in the sidebar).");
-        return;
-    }
-
     setIsRefining(true);
     setErrorMsg(null);
     try {
@@ -338,8 +316,7 @@ const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onUpdateAgent, on
         const response = await runJSONTask(
             'gemini-2.5-flash', 
             taskPrompt,
-            "You are an Expert Prompt Engineer. Return a valid JSON object matching the requested schema. Do not include any explanation outside the JSON.",
-            apiKeys.google
+            "You are an Expert Prompt Engineer. Return a valid JSON object matching the requested schema. Do not include any explanation outside the JSON."
         );
 
         let result: any;
@@ -388,10 +365,6 @@ const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onUpdateAgent, on
 
   const handleGenerateLogic = async () => {
     if (!conditionPrompt.trim()) return;
-    if (!apiKeys.google) {
-        setErrorMsg("Google API Key is missing.");
-        return;
-    }
     setIsGeneratingLogic(true);
     setErrorMsg(null);
     try {
@@ -400,8 +373,7 @@ const AgentModal = ({ agents, columns, onRunAgent, onAddAgent, onUpdateAgent, on
             `Logic Request: "${conditionPrompt}"
             Available Fields: ${columns.map(c => `/${c.id}`).join(', ')}
             Output JS expression string only.`,
-            "Logic Engine. Return pure string.",
-            apiKeys.google
+            "Logic Engine. Return pure string."
         );
         setCondition(response.trim());
     } catch (e: any) {
