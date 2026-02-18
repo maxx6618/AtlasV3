@@ -1,13 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { loadAppSettingsFromSupabase, resolveKey } from './lib/supabase';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.SERPER_API_KEY;
+  const settings = await loadAppSettingsFromSupabase();
+  const apiKey = resolveKey(settings, 'serperApiKey', 'SERPER_API_KEY');
   if (!apiKey) {
-    return res.status(500).json({ error: 'SERPER_API_KEY not configured on server.' });
+    return res.status(500).json({ error: 'SERPER_API_KEY not configured. Add keys in Settings or set SERPER_API_KEY env var.' });
   }
 
   try {

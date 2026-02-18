@@ -121,6 +121,86 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             <div className="space-y-2.5">
+                <p className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-[#4a6078]' : 'text-neutral-400'}`}>Team API Keys</p>
+                <p className={`text-[10px] italic ${isDarkMode ? 'text-[#4a6078]' : 'text-neutral-400'}`}>Shared keys for the team. Billed centrally to the company.</p>
+                <div className="space-y-1.5">
+                    <label className="text-[10px] text-blue-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                        Google Gemini
+                    </label>
+                    <input 
+                        type="password"
+                        className={`${inputCls} focus:border-blue-500`}
+                        placeholder="AIzaSy..."
+                        value={localSettings.googleApiKey}
+                        onChange={e => handleChange('googleApiKey', e.target.value)}
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-[10px] text-green-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                        OpenAI
+                    </label>
+                    <input 
+                        type="password"
+                        className={`${inputCls} focus:border-green-500`}
+                        placeholder="sk-..."
+                        value={localSettings.openaiApiKey}
+                        onChange={e => handleChange('openaiApiKey', e.target.value)}
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-[10px] text-amber-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                        Anthropic
+                    </label>
+                    <input 
+                        type="password"
+                        className={`${inputCls} focus:border-amber-500`}
+                        placeholder="sk-ant-..."
+                        value={localSettings.anthropicApiKey}
+                        onChange={e => handleChange('anthropicApiKey', e.target.value)}
+                    />
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-[10px] text-blue-300 font-bold uppercase tracking-widest flex items-center gap-2">
+                        Serper
+                    </label>
+                    <input 
+                        type="password"
+                        className={`${inputCls} focus:border-blue-400`}
+                        placeholder="serper_..."
+                        value={localSettings.serperApiKey}
+                        onChange={e => handleChange('serperApiKey', e.target.value)}
+                    />
+                    <p className={`text-[10px] italic ${isDarkMode ? 'text-[#4a6078]' : 'text-neutral-400'}`}>Google Search API alternative.</p>
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-[10px] text-purple-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                        Apify
+                    </label>
+                    <input 
+                        type="password"
+                        className={`${inputCls} focus:border-purple-500`}
+                        placeholder="apify_api_..."
+                        value={localSettings.apifyApiKey}
+                        onChange={e => handleChange('apifyApiKey', e.target.value)}
+                    />
+                    <p className={`text-[10px] italic ${isDarkMode ? 'text-[#4a6078]' : 'text-neutral-400'}`}>Web search and scraping.</p>
+                </div>
+                <div className="space-y-1.5">
+                    <label className="text-[10px] text-rose-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                        ElevenLabs
+                    </label>
+                    <input 
+                        type="password"
+                        className={`${inputCls} focus:border-rose-500`}
+                        placeholder="sk_..."
+                        value={localSettings.elevenLabsApiKey}
+                        onChange={e => handleChange('elevenLabsApiKey', e.target.value)}
+                    />
+                    <p className={`text-[10px] italic ${isDarkMode ? 'text-[#4a6078]' : 'text-neutral-400'}`}>Text-to-speech for demo.</p>
+                </div>
+            </div>
+
+            <div className="space-y-2.5">
                 <p className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-[#4a6078]' : 'text-neutral-400'}`}>Agent Settings</p>
 
                 <div className="space-y-1.5">
@@ -285,7 +365,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className={`p-3 rounded-xl flex gap-2 border ${isDarkMode ? 'bg-[#0f172a]/50 border-[#1e2d3d]' : 'bg-blue-50 border-blue-100'}`}>
                 <ShieldCheck className={`w-4 h-4 shrink-0 ${isDarkMode ? 'text-[#5a7a94]' : 'text-blue-400'}`} />
                 <p className={`text-[10px] leading-relaxed ${isDarkMode ? 'text-[#5a7a94]' : 'text-blue-600'}`}>
-                    API keys for LLM providers (Gemini, OpenAI, Anthropic, Serper, Apify, ElevenLabs) are managed securely on the server. Only the OpenRegister key is stored locally.
+                    Team API keys are stored in Supabase and used server-side only. The company is billed centrally.
                 </p>
             </div>
 

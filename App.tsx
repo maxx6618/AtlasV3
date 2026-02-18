@@ -108,6 +108,12 @@ const getDefaultModelByProvider = (provider: AgentProvider) => {
 };
 
 const getDefaultAppSettings = (): AppSettings => ({
+  googleApiKey: '',
+  openaiApiKey: '',
+  anthropicApiKey: '',
+  serperApiKey: '',
+  apifyApiKey: '',
+  elevenLabsApiKey: '',
   apifyWebSearchEnabled: false,
   openRegisterApiKey: '',
   researchSteps: 2,
@@ -133,7 +139,13 @@ const normalizeAppSettings = (settings: Partial<AppSettings>): AppSettings => {
       getDefaultModelByProvider(merged.uploadMatchProvider || AgentProvider.GOOGLE),
     uploadMatchProvider: merged.uploadMatchProvider || AgentProvider.GOOGLE,
     uploadMatchEnabled: merged.uploadMatchEnabled ?? true,
-    apifyWebSearchEnabled: merged.apifyWebSearchEnabled ?? false
+    apifyWebSearchEnabled: merged.apifyWebSearchEnabled ?? false,
+    googleApiKey: merged.googleApiKey || '',
+    openaiApiKey: merged.openaiApiKey || '',
+    anthropicApiKey: merged.anthropicApiKey || '',
+    serperApiKey: merged.serperApiKey || '',
+    apifyApiKey: merged.apifyApiKey || '',
+    elevenLabsApiKey: merged.elevenLabsApiKey || ''
   };
 };
 

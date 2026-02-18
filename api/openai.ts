@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { loadAppSettingsFromSupabase, resolveKey } from './lib/supabase';
 
 const JSON_FORMAT_MODELS = ['gpt-4o', 'gpt-4o-mini'];
 
@@ -7,9 +8,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const settings = await loadAppSettingsFromSupabase();
+  const apiKey = resolveKey(settings, 'openaiApiKey', 'OPENAI_API_KEY');
   if (!apiKey) {
-    return res.status(500).json({ error: 'OPENAI_API_KEY not configured on server.' });
+    return res.status(500).json({ error: 'OPENAI_API_KEY not configured. Add keys in Settings or set OPENAI_API_KEY env var.' });
   }
 
   try {

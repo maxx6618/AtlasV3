@@ -1,16 +1,19 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenAI } from '@google/genai';
-
-const getAI = () => {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error('GEMINI_API_KEY not configured on server.');
-  return new GoogleGenAI({ apiKey: key });
-};
+import { loadAppSettingsFromSupabase, resolveKey } from './lib/supabase';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  const settings = await loadAppSettingsFromSupabase();
+  const apiKey = resolveKey(settings, 'googleApiKey', 'GEMINI_API_KEY');
+  if (!apiKey) {
+    return res.status(500).json({ error: 'GEMINI_API_KEY not configured. Add keys in Settings or set GEMINI_API_KEY env var.' });
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
 
   try {
     const { action, model, prompt, systemInstruction, outputKeys, searchPrompt, structurePrompt, maxSteps } = req.body;
@@ -18,8 +21,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!prompt && !searchPrompt) {
       return res.status(400).json({ error: 'prompt is required' });
     }
-
-    const ai = getAI();
 
     if (action === 'search') {
       const response = await ai.models.generateContent({

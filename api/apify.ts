@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { loadAppSettingsFromSupabase, resolveKey } from './lib/supabase';
 
 const APIFY_BASE = 'https://api.apify.com/v2';
 
@@ -7,9 +8,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiToken = process.env.APIFY_API_KEY;
+  const settings = await loadAppSettingsFromSupabase();
+  const apiToken = resolveKey(settings, 'apifyApiKey', 'APIFY_API_KEY');
   if (!apiToken) {
-    return res.status(500).json({ error: 'APIFY_API_KEY not configured on server.' });
+    return res.status(500).json({ error: 'APIFY_API_KEY not configured. Add keys in Settings or set APIFY_API_KEY env var.' });
   }
 
   try {

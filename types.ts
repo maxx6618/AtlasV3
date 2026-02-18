@@ -134,6 +134,12 @@ export interface VerticalData {
 }
 
 export interface AppSettings {
+  googleApiKey: string;
+  openaiApiKey: string;
+  anthropicApiKey: string;
+  serperApiKey: string;
+  apifyApiKey: string;
+  elevenLabsApiKey: string;
   apifyWebSearchEnabled: boolean;
   openRegisterApiKey: string;
   researchSteps: number;
