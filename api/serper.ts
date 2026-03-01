@@ -41,7 +41,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       description: item?.snippet || '',
     }));
 
-    return res.status(200).json({ results });
+    // Also return knowledgeGraph for parent company resolution
+    const knowledgeGraph = data?.knowledgeGraph
+      ? { title: data.knowledgeGraph.title || '', type: data.knowledgeGraph.type || '', description: data.knowledgeGraph.description || '' }
+      : null;
+
+    return res.status(200).json({ results, knowledgeGraph });
 
   } catch (error: any) {
     console.error('Serper proxy error:', error);

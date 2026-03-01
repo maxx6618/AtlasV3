@@ -18,6 +18,93 @@ import {
   InputMapping,
 } from './openRegisterAgent';
 
+import {
+  serperGoogleSearch,
+  extractCompanyFromNorthData,
+  expandUmlauts,
+} from './serperService';
+
+// ── Subsidiary Detection ──────────────────────────────
+// Words indicating a subsidiary / non-parent entity
+
+const SUBSIDIARY_INDICATORS = [
+  'immobilien', 'insurance', 'property', 'systems', 'protection',
+  'solutions', 'services', 'digital', 'consulting', 'vermögen',
+  'immo', 'logistik', 'energy', 'financial', 'ventures', 'capital',
+  'association', 'verein', 'partners', 'großhandel', 'verlag',
+  'beteiligungs', 'pensionsfonds', 'healthcare', 'automotive',
+  'mantel', 'verwaltung', 'freizeitgruppe', 'robotics', 'ebike',
+  'performance', 'dematic', 'electronics', 'paket', 'express',
+  'real estate', 'beteiligung', 'stiftung', 'luftsport', 'fischen',
+  'supply chain', 'freight',
+];
+
+/**
+ * Check if a company name looks like the parent holding, not a subsidiary.
+ * Must contain brandKeyword and must NOT contain subsidiary indicators.
+ */
+const isLikelyParent = (name: string, brandKeyword: string): boolean => {
+  const nameLower = name.toLowerCase();
+  const keywords = brandKeyword.toLowerCase().split(/\s+/);
+  for (const kw of keywords) {
+    if (!nameLower.includes(kw)) return false;
+  }
+  for (const sub of SUBSIDIARY_INDICATORS) {
+    if (nameLower.includes(sub)) return false;
+  }
+  return true;
+};
+
+/**
+ * Score how likely a company is the parent. Higher = better.
+ * Prefers shorter names with AG/SE/KGaA legal forms.
+ */
+const scoreParent = (name: string, brandKeyword: string): number => {
+  if (!isLikelyParent(name, brandKeyword)) return -1;
+  let score = 100 - name.length * 0.5;
+  const lower = name.toLowerCase();
+  if (lower.includes('aktiengesellschaft') || / ag(\s|$|,)/.test(lower)) score += 15;
+  if (/ se(\s|$|,)/.test(lower)) score += 15;
+  if (lower.includes('kgaa')) score += 12;
+  if (lower.includes('gmbh') && !lower.includes('co.')) score += 5;
+  return score;
+};
+
+/**
+ * From a list of OpenRegister search results, pick the most likely parent.
+ */
+const findBestParent = (
+  items: any[],
+  brandKeyword: string
+): { item: any; score: number } | null => {
+  let best: any = null;
+  let bestScore = -1;
+  for (const item of items || []) {
+    const nameObj = item?.name;
+    const iname = typeof nameObj === 'object' ? nameObj?.name || '' : String(nameObj || '');
+    const s = scoreParent(iname, brandKeyword);
+    if (s > bestScore) {
+      bestScore = s;
+      best = item;
+    }
+  }
+  return best && bestScore > 0 ? { item: best, score: bestScore } : null;
+};
+
+/** Extract brand keyword from a domain or company_name for subsidiary checks. */
+const extractBrand = (row: Record<string, any>, mapping: InputMapping): string => {
+  // Prefer company_name if it looks like a proper name
+  const name = mapping.companyNameCol ? (row[mapping.companyNameCol] || '').toString().trim() : '';
+  if (name && name.length > 1) return name;
+  // Fallback: extract from website domain
+  const website = mapping.websiteCol ? (row[mapping.websiteCol] || '').toString().trim() : '';
+  if (website) {
+    const domain = website.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+    return domain.split('.')[0] || '';
+  }
+  return '';
+};
+
 // ── Enrichment Status Values ──────────────────────────────────
 
 export const ENRICHMENT_STATUS = {
@@ -88,52 +175,160 @@ export const runCompanyEnrichment = async (
   apiKey: string
 ): Promise<CompanyEnrichmentResult> => {
   try {
-    console.log('[Workflow] Company enrichment starting for row:', row.id);
-    console.log('[Workflow] Mapping:', mapping);
+    const brand = extractBrand(row, mapping);
+    console.log('[Workflow] Company enrichment starting for row:', row.id, '| brand:', brand);
     let companyId = '';
 
+    // ═══════════════════════════════════════════════════════
     // 1. Check if company_id already exists
+    // ═══════════════════════════════════════════════════════
     const directId = mapping.companyIdCol ? row[mapping.companyIdCol]?.toString().trim() : '';
     if (directId) {
       companyId = directId;
       console.log('[Workflow] Found direct company_id:', companyId);
     }
 
-    // 2. Lookup by website (primary anchor)
+    // ═══════════════════════════════════════════════════════
+    // STRATEGY 1: Lookup by website (primary anchor)
+    // Validates result is parent company, not subsidiary
+    // ═══════════════════════════════════════════════════════
     if (!companyId) {
       const website = mapping.websiteCol ? row[mapping.websiteCol]?.toString().trim() : '';
       if (website) {
-        console.log('[Workflow] Looking up website:', website);
+        console.log('[Workflow] Strategy 1: URL lookup for', website);
         try {
           const lookup = await lookupByWebsite(apiKey, website);
           const id = parseCompanyId(lookup);
           if (id) {
-            companyId = id;
-            console.log('[Workflow] Website lookup resolved to:', companyId);
+            // Validate: is this the parent company?
+            if (brand) {
+              const details = await getCompanyDetails(apiKey, id);
+              const resolvedName = details?.name?.name || '';
+              if (isLikelyParent(resolvedName, brand)) {
+                companyId = id;
+                console.log('[Workflow] Strategy 1 ✓ Parent confirmed:', resolvedName);
+              } else {
+                console.log('[Workflow] Strategy 1 → Subsidiary detected:', resolvedName, '– falling through');
+              }
+            } else {
+              // No brand to validate against, accept the result
+              companyId = id;
+              console.log('[Workflow] Strategy 1 ✓ Accepted (no brand check):', id);
+            }
           }
         } catch (e: any) {
-          console.log('[Workflow] Website lookup failed:', e.message);
+          console.log('[Workflow] Strategy 1 failed:', e.message);
         }
       }
     }
 
-    // 3. Search by company name (fallback)
+    // ═══════════════════════════════════════════════════════
+    // STRATEGY 1b: Serper Google → NorthData name → OR search
+    // Uses Google to find the correct parent legal entity name,
+    // then searches OpenRegister by that exact name.
+    // ═══════════════════════════════════════════════════════
+    if (!companyId && brand) {
+      console.log('[Workflow] Strategy 1b: Serper search for', brand);
+      try {
+        const expandedBrand = expandUmlauts(brand);
+        const query = `${expandedBrand} Handelsregister AG OR GmbH OR SE OR KG`;
+        const serperData = await serperGoogleSearch(query);
+
+        if (!serperData.error) {
+          // Collect candidate names from NorthData URLs
+          const candidates: string[] = [];
+          for (const result of serperData.results.slice(0, 7)) {
+            if (result.url.includes('northdata.de')) {
+              const ndName = extractCompanyFromNorthData(result.url);
+              if (ndName) candidates.push(ndName);
+            }
+          }
+          // Also check Knowledge Graph
+          if (serperData.knowledgeGraph?.title) {
+            candidates.push(serperData.knowledgeGraph.title);
+          }
+
+          // Score candidates and pick best parent
+          let bestCandidate: string | null = null;
+          let bestCandidateScore = -1;
+          for (const c of candidates) {
+            const s = scoreParent(c, brand);
+            if (s > bestCandidateScore) {
+              bestCandidateScore = s;
+              bestCandidate = c;
+            }
+          }
+
+          if (bestCandidate) {
+            console.log('[Workflow] Strategy 1b: Best NorthData candidate:', bestCandidate);
+            // Search OpenRegister by this exact name
+            const searchResult = await searchCompany(apiKey, { query: bestCandidate, per_page: 5 });
+            const items = searchResult?.results || searchResult?.companies || (Array.isArray(searchResult) ? searchResult : []);
+            const parentMatch = findBestParent(items, brand);
+            if (parentMatch) {
+              const id = parseCompanyId(parentMatch.item);
+              if (id) {
+                companyId = id;
+                console.log('[Workflow] Strategy 1b ✓ Resolved via Serper→OR:', id);
+              }
+            }
+
+            // If OR search didn't match, we still have the NorthData name
+            // Store it so company details can be fetched
+            if (!companyId && bestCandidate) {
+              // Try a direct name search as last attempt
+              const directSearch = await searchCompany(apiKey, { query: bestCandidate, per_page: 1 });
+              const directItems = directSearch?.results || directSearch?.companies || (Array.isArray(directSearch) ? directSearch : []);
+              if (directItems.length > 0) {
+                const id = parseCompanyId(directItems[0]);
+                if (id) {
+                  companyId = id;
+                  console.log('[Workflow] Strategy 1b ✓ Resolved via direct name:', id);
+                }
+              }
+            }
+          }
+        }
+      } catch (e: any) {
+        console.log('[Workflow] Strategy 1b failed:', e.message);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    // STRATEGY 2: Search by company name (fallback)
+    // Uses subsidiary scoring to pick the best result
+    // ═══════════════════════════════════════════════════════
     if (!companyId) {
       const name = mapping.companyNameCol ? row[mapping.companyNameCol]?.toString().trim() : '';
-      if (name) {
-        console.log('[Workflow] Searching by name:', name);
+      const searchTerm = name || brand;
+      if (searchTerm) {
+        console.log('[Workflow] Strategy 2: Name search for', searchTerm);
         try {
-          const result = await searchCompany(apiKey, { query: name, per_page: 1 });
+          const result = await searchCompany(apiKey, { query: searchTerm, per_page: 5 });
           const items = result?.results || result?.companies || (Array.isArray(result) ? result : []);
-          if (items.length > 0) {
+
+          if (brand) {
+            // Use scoring to find parent
+            const parentMatch = findBestParent(items, brand);
+            if (parentMatch) {
+              const id = parseCompanyId(parentMatch.item);
+              if (id) {
+                companyId = id;
+                console.log('[Workflow] Strategy 2 ✓ Best parent:', id);
+              }
+            }
+          }
+
+          // Fallback: just take the first result
+          if (!companyId && items.length > 0) {
             const id = parseCompanyId(items[0]);
             if (id) {
               companyId = id;
-              console.log('[Workflow] Name search resolved to:', companyId);
+              console.log('[Workflow] Strategy 2 ✓ First result:', id);
             }
           }
         } catch (e: any) {
-          console.log('[Workflow] Name search failed:', e.message);
+          console.log('[Workflow] Strategy 2 failed:', e.message);
         }
       }
     }

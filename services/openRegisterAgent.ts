@@ -277,7 +277,51 @@ const resolveOwnershipStructure = (owners: any[]) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// SUBSIDIARY DETECTION — prevent resolving to child entities
+// ═══════════════════════════════════════════════════════════════
+
+const SUBSIDIARY_INDICATORS = [
+  'immobilien', 'insurance', 'property', 'systems', 'protection',
+  'solutions', 'services', 'digital', 'consulting', 'vermögen',
+  'immo', 'logistik', 'energy', 'financial', 'ventures', 'capital',
+  'association', 'verein', 'partners', 'großhandel', 'verlag',
+  'beteiligungs', 'pensionsfonds', 'healthcare', 'automotive',
+  'mantel', 'verwaltung', 'freizeitgruppe', 'robotics', 'ebike',
+  'performance', 'dematic', 'electronics', 'paket', 'express',
+  'real estate', 'beteiligung', 'stiftung', 'luftsport', 'fischen',
+  'supply chain', 'freight',
+];
+
+/** Check if a name is likely the parent company for a given brand. */
+export const isLikelyParent = (name: string, brandKeyword: string): boolean => {
+  const nameLower = name.toLowerCase();
+  const keywords = brandKeyword.toLowerCase().split(/\s+/);
+  for (const kw of keywords) {
+    if (!nameLower.includes(kw)) return false;
+  }
+  for (const sub of SUBSIDIARY_INDICATORS) {
+    if (nameLower.includes(sub)) return false;
+  }
+  return true;
+};
+
+/** Score parent likelihood. Higher = more likely to be the holding company. */
+export const scoreParent = (name: string, brandKeyword: string): number => {
+  if (!isLikelyParent(name, brandKeyword)) return -1;
+  let score = 100 - name.length * 0.5;
+  const lower = name.toLowerCase();
+  if (lower.includes('aktiengesellschaft') || / ag(\s|$|,)/.test(lower)) score += 15;
+  if (/ se(\s|$|,)/.test(lower)) score += 15;
+  if (lower.includes('kgaa')) score += 12;
+  if (lower.includes('gmbh') && !lower.includes('co.')) score += 5;
+  return score;
+};
+
+// ═══════════════════════════════════════════════════════════════
 // RESOLVE COMPANY ID — 3-step fallback chain
+// 1) Direct ID → 2) Website lookup (with parent check)
+// → 2b) Serper Google → NorthData name → OR search
+// → 3) Name search (with parent scoring)
 // ═══════════════════════════════════════════════════════════════
 
 export const resolveCompanyId = async (
@@ -289,22 +333,52 @@ export const resolveCompanyId = async (
   const directId = row[mapping.companyIdCol]?.toString().trim();
   if (directId) return directId;
 
+  // Extract brand for subsidiary checks
+  const brand = (row[mapping.companyNameCol] || '').toString().trim()
+    || (row[mapping.websiteCol] || '').toString().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].split('.')[0];
+
   // 2. Lookup by website
   const website = row[mapping.websiteCol]?.toString().trim();
   if (website) {
     try {
       const lookup = await lookupByWebsite(apiKey, website);
       const id = parseCompanyId(lookup);
-      if (id) return id;
+      if (id) {
+        // Validate parent if we have a brand
+        if (brand) {
+          const details = await getCompanyDetails(apiKey, id);
+          const resolvedName = details?.name?.name || '';
+          if (isLikelyParent(resolvedName, brand)) {
+            return id;
+          }
+          // Subsidiary detected — fall through to Serper
+        } else {
+          return id;
+        }
+      }
     } catch { /* fallthrough */ }
   }
 
-  // 3. Search by company name
+  // 3. Search by company name (with parent scoring)
   const name = row[mapping.companyNameCol]?.toString().trim();
   if (name) {
     try {
-      const result = await searchCompany(apiKey, { query: name, per_page: 1 });
+      const result = await searchCompany(apiKey, { query: name, per_page: 5 });
       const items = result?.results || result?.companies || (Array.isArray(result) ? result : []);
+      // Find best parent match
+      let bestScore = -1;
+      let bestId = '';
+      for (const item of items) {
+        const nameObj = item?.name;
+        const iname = typeof nameObj === 'object' ? nameObj?.name || '' : String(nameObj || '');
+        const s = brand ? scoreParent(iname, brand) : 0;
+        if (s > bestScore) {
+          bestScore = s;
+          bestId = parseCompanyId(item);
+        }
+      }
+      if (bestId) return bestId;
+      // Fallback: first result
       if (items.length > 0) {
         const id = parseCompanyId(items[0]);
         if (id) return id;
